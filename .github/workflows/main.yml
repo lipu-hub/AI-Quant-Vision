@@ -1,0 +1,28 @@
+name: Send Daily Stock Alert
+
+on:
+  schedule:
+    - cron: '30 13 * * *' # Har roz Indian Time (IST) dopahar 7:00 PM baje chalega
+  workflow_dispatch:      # Isse aap khud bhi 'Run' kar sakte hain
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Tools
+        run: |
+          pip install yfinance vaderSentiment requests
+
+      - name: Run AI Analyst
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python bot_script.py
