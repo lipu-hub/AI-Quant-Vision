@@ -4,22 +4,21 @@ import pandas as pd
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
 
-# --- UI DESIGN ---
-st.set_page_config(page_title="AI Quant Vision", layout="wide")
+# --- UI SETTINGS ---
+st.set_page_config(page_title="AI Quant Vision 2026", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; color: white; }
     .stock-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(0, 255, 136, 0.3);
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid #00ff88;
         padding: 20px;
         border-radius: 15px;
         margin-bottom: 10px;
-        min-height: 250px;
     }
-    .profit { color: #00ff88; font-weight: bold; font-size: 20px; }
-    .loss { color: #ff4b4b; font-weight: bold; font-size: 20px; }
+    .profit { color: #00ff88; font-weight: bold; }
+    .loss { color: #ff4b4b; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -29,51 +28,34 @@ def get_analysis(symbol):
     try:
         stock = yf.Ticker(symbol)
         hist = stock.history(period="5d")
-        
-        if hist.empty:
-            return None
+        if hist.empty: return None
 
-        current_price = hist['Close'].iloc[-1]
-        prev_price = hist['Close'].iloc[-2]
-        change = current_price - prev_price
+        current_price = round(hist['Close'].iloc[-1], 2)
+        prev_price = round(hist['Close'].iloc[-2], 2)
+        change = round(current_price - prev_price, 2)
         
-        # --- SAFE NEWS FETCHING ---
+        # AI Sentiment
         sentiment_score = 0
-        headlines = "No recent news found."
-        
-        # Check if news exists
+        news_text = "No News Found"
         if hasattr(stock, 'news') and stock.news:
-            headlines = ""
-            for n in stock.news[:2]:
-                title = n.get('title', 'No Title') # Safe way to get title
-                headlines += f"• {title}<br>"
-                sentiment_score += analyzer.polarity_scores(title)['compound']
+            title = stock.news[0].get('title', 'No Title')
+            news_text = title
+            sentiment_score = analyzer.polarity_scores(title)['compound']
         
-        if sentiment_score > 0.05:
-            verdict, v_class = "PROFIT (Bullish)", "profit"
-        elif sentiment_score < -0.05:
-            verdict, v_class = "LOSS (Bearish)", "loss"
-        else:
-            verdict, v_class = "NEUTRAL", ""
+        verdict = "PROFIT ✅" if sentiment_score > 0.05 else "LOSS ❌" if sentiment_score < -0.05 else "NEUTRAL 🔍"
+        v_class = "profit" if "PROFIT" in verdict else "loss" if "LOSS" in verdict else ""
 
-        return {
-            "price": round(current_price, 2),
-            "change": round(change, 2),
-            "verdict": verdict,
-            "class": v_class,
-            "news": headlines
-        }
-    except Exception as e:
-        return None
+        return {"price": current_price, "change": change, "verdict": verdict, "class": v_class, "news": news_text}
+    except: return None
 
-# --- MAIN APP ---
-st.title("🤖 AI Autonomous Stock Analyst")
-st.write(f"Last Sync: {datetime.now().strftime('%H:%M:%S')} UTC")
+# --- MAIN PAGE ---
+st.title("🤖 AI Autonomous Analyst")
+st.write(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
-popular_stocks = ["TSLA", "AAPL", "NVDA", "MSFT", "GOOGL"]
-cols = st.columns(len(popular_stocks))
+stocks = ["TSLA", "AAPL", "NVDA", "BTC-USD", "MSFT"]
+cols = st.columns(len(stocks))
 
-for i, s in enumerate(popular_stocks):
+for i, s in enumerate(stocks):
     data = get_analysis(s)
     with cols[i]:
         if data:
@@ -83,11 +65,7 @@ for i, s in enumerate(popular_stocks):
                     <p>Price: ${data['price']}</p>
                     <p class="{data['class']}">{data['verdict']}</p>
                     <hr>
-                    <p style="font-size: 11px; color: #aaa;">{data['news']}</p>
+                    <p style="font-size: 0.8rem; color: #aaa;">{data['news']}</p>
                 </div>
             """, unsafe_allow_html=True)
-            st.metric(label="Change", value=f"${data['price']}", delta=f"{data['change']}")
-        else:
-            st.error(f"Data for {s} unavailable")
-
-st.success("✅ System is live and scanning the internet.")
+            st.metric("Change", f"${data['price']}", f"{data['change']}")
