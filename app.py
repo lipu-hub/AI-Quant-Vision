@@ -2,57 +2,81 @@ import streamlit as st
 import yfinance as yf
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="MarketMind AI - India", layout="wide")
 
-# Custom CSS for Dark Theme
+# Custom CSS for Dark Theme (Enhanced)
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; color: white; }
     .card {
         background: #1e2130;
         padding: 20px;
-        border-radius: 10px;
-        border-left: 5px solid #00ff88;
+        border-radius: 12px;
+        border-top: 4px solid #00ff88;
         margin-bottom: 20px;
+        transition: 0.3s;
     }
+    .card:hover { transform: translateY(-5px); border-top: 4px solid #00d4ff; }
+    h3 { margin-bottom: 5px; color: #00ff88; }
+    h2 { margin-top: 0px; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
 analyzer = SentimentIntensityAnalyzer()
 
 st.title("🇮🇳 MarketMind AI Analyst (NSE)")
-st.write(f"Server Time: {datetime.now().strftime('%H:%M:%S')} UTC")
+st.write(f"Last Sync: {datetime.now().strftime('%H:%M:%S')} IST")
 
-# Indian Stocks List
+# Updated Indian Stocks List
 indian_stocks = ["RELIANCE.NS", "TATAMOTORS.NS", "ZOMATO.NS", "TCS.NS", "INFY.NS", "BTC-USD"]
 
+# Setup Columns
 cols = st.columns(3)
 
 for i, s in enumerate(indian_stocks):
     try:
         t = yf.Ticker(s)
-        price = round(t.history(period="1d")['Close'].iloc[-1], 2)
+        # 1-day data with 15-min interval for smooth sparklines
+        hist = t.history(period="1d", interval="15m")
+        if hist.empty:
+            continue
+            
+        price = round(hist['Close'].iloc[-1], 2)
         
-        # News Sentiment
+        # News Sentiment logic with better safety
         score = 0
-        news_head = "No Recent News"
-        if t.news:
-            news_head = t.news[0].get('title', '')
-            score = analyzer.polarity_scores(news_head)['compound']
+        news_head = "No Recent News Found"
+        try:
+            news_data = t.news
+            if news_data and len(news_data) > 0:
+                news_head = news_data[0].get('title', 'No Title Available')
+                score = analyzer.polarity_scores(news_head)['compound']
+        except:
+            pass # News fetch fails sometimes
         
-        status = "BULLISH 🚀" if score > 0.05 else "BEARISH 📉" if score < -0.05 else "STABLE ⚖️"
+        status = "BULLISH 🚀" if score > 0.1 else "BEARISH 📉" if score < -0.1 else "STABLE ⚖️"
+        color = "#00ff88" if score > 0.1 else "#ff4b4b" if score < -0.1 else "#888"
         currency = "₹" if ".NS" in s else "$"
         
         with cols[i % 3]:
+            # Simple Card with HTML
             st.markdown(f"""
                 <div class="card">
                     <h3>{s.replace('.NS', '')}</h3>
                     <h2>{currency}{price}</h2>
-                    <p>AI Sentiment: <b>{status}</b></p>
-                    <hr>
-                    <p style="font-size: 0.8rem;">{news_head}</p>
+                    <p>AI Sentiment: <b style="color:{color}">{status}</b></p>
+                    <hr style="opacity: 0.1">
+                    <p style="font-size: 0.8rem; height: 40px; overflow: hidden;">{news_head}</p>
                 </div>
             """, unsafe_allow_html=True)
-    except:
+            
+            # Optional: Add a small sparkline chart under the card
+            fig = go.Figure(data=go.Scatter(x=hist.index, y=hist['Close'], line=dict(color=color, width=2)))
+            fig.update_layout(margin=dict(l=0,r=0,t=0,b=0), height=60, xaxis_visible=False, yaxis_visible=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+    except Exception as e:
+        # Silently skip if ticker fails
         continue
