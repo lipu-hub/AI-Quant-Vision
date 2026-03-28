@@ -12,9 +12,9 @@ st.set_page_config(page_title="MarketMind AI - Pro Terminal", layout="wide")
 # 2. Auto-Refresh (Updates every 60 seconds)
 st_autorefresh(interval=60 * 1000, key="datarefresh")
 
-# 3. Telegram Config (Replace with your real details)
-TELEGRAM_TOKEN = "YOUR_BOT_TOKEN_HERE"
-CHAT_ID = "YOUR_CHAT_ID_HERE"
+# 3. Telegram Config (ID updated)
+TELEGRAM_TOKEN = "YOUR_BOT_TOKEN_HERE" # Apna Bot Token yahan daalein
+CHAT_ID = "8546128135"
 
 def send_telegram_msg(message):
     if TELEGRAM_TOKEN != "YOUR_BOT_TOKEN_HERE":
@@ -81,12 +81,12 @@ def get_market_data(stocks):
 
 market_data = get_market_data(stocks_list)
 
-# Alert Logic (Runs every refresh)
+# 7. Alert Logic (Triggers at 3% movement)
 for item in market_data:
-    if abs(item['Change %']) >= 3.0: # 3% movement alert
+    if abs(item['Change %']) >= 3.0: 
         alert_key = f"alert_sent_{item['Symbol']}_{datetime.now().strftime('%Y%m%d')}"
         if alert_key not in st.session_state:
-            send_telegram_msg(f"🚨 ALERT: {item['Symbol']} move detected! \nPrice: {item['Price']} \nChange: {item['Change %']}%")
+            send_telegram_msg(f"🚨 MARKET ALERT: {item['Symbol']} is volatile! \nPrice: {item['Price']} \nChange: {item['Change %']}%")
             st.session_state[alert_key] = True
 
 # --- PAGE 1: MARKET OVERVIEW ---
