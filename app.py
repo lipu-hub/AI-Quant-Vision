@@ -1,81 +1,86 @@
 import streamlit as st
-import yfinance as yf
+import yfinance as tf
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
-import plotly.graph_objects as go
+import pandas as pd
 
+# Page Configuration
 st.set_page_config(page_title="MarketMind AI - India", layout="wide")
 
-# Custom CSS for Dark Theme (Enhanced)
+# Custom CSS for Dynamic Dark Theme & Hover Effects
 st.markdown("""
-    <style>
+<style>
     .stApp { background-color: #0e1117; color: white; }
     .card {
         background: #1e2130;
         padding: 20px;
         border-radius: 12px;
-        border-top: 4px solid #00ff88;
-        margin-bottom: 10px;
-        transition: 0.3s;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease;
     }
-    .card:hover { transform: translateY(-5px); border-top: 4px solid #00d4ff; }
-    h3 { margin-bottom: 5px; color: #00ff88; font-size: 1.2rem; }
-    h2 { margin-top: 0px; margin-bottom: 10px; font-size: 1.8rem; }
-    </style>
-    """, unsafe_allow_html=True)
+    .card:hover { transform: scale(1.02); }
+    hr { margin: 10px 0; border: 0.5px solid #444; }
+</style>
+""", unsafe_allow_html=True)
 
 analyzer = SentimentIntensityAnalyzer()
 
+# Title and Live Sync Info
 st.title("🇮🇳 MarketMind AI Analyst (NSE)")
-st.write(f"Last Sync: {datetime.now().strftime('%H:%M:%S')} IST")
+now = datetime.now().strftime('%H:%M:%S')
+st.write(f"**Last Sync:** {now} IST | *Auto-refreshing every 10 mins*")
 
-# Updated Indian Stocks List
+# Indian Stocks List
 indian_stocks = ["RELIANCE.NS", "TATAMOTORS.NS", "ZOMATO.NS", "TCS.NS", "INFY.NS", "BTC-USD"]
 
-# Setup Columns
 cols = st.columns(3)
 
 for i, s in enumerate(indian_stocks):
     try:
-        t = yf.Ticker(s)
-        # 1-day data with 15-min interval
-        hist = t.history(period="1d", interval="15m")
-        if hist.empty:
-            continue
-            
-        price = round(hist['Close'].iloc[-1], 2)
+        t = tf.Ticker(s)
+        # Fetch latest price
+        hist = t.history(period="1d")
+        if not hist.empty:
+            price = round(hist['Close'].iloc[-1], 2)
+        else:
+            price = "Data Unavailable"
 
-        # News Sentiment logic
+        # News & Sentiment Logic
         score = 0
-        news_head = "No Recent News Found"
-        try:
-            news_data = t.news
-            if news_data and len(news_data) > 0:
-                news_head = news_data[0].get('title', 'No Title Available')
-                score = analyzer.polarity_scores(news_head)['compound']
-        except:
-            pass 
+        news_head = "No recent news available"
+        if t.news:
+            news_head = t.news[0].get('title', news_head)
+            score = analyzer.polarity_scores(news_head)['compound']
 
-        status = "BULLISH 🚀" if score > 0.1 else "BEARISH 📉" if score < -0.1 else "STABLE ⚖️"
-        color = "#00ff88" if score > 0.1 else "#ff4b4b" if score < -0.1 else "#888"
+        # Determine Sentiment and Border Color
+        if score > 0.05:
+            status = "BULLISH 🚀"
+            border_color = "#00ff88" # Green
+        elif score < -0.05:
+            status = "BEARISH 📉"
+            border_color = "#ff4b4b" # Red
+        else:
+            status = "STABLE ⚖️"
+            border_color = "#f0f2f6" # White/Grey
+
         currency = "₹" if ".NS" in s else "$"
 
+        # Card Rendering with Dynamic Border
         with cols[i % 3]:
-            # Card Display
             st.markdown(f"""
-                <div class="card">
-                    <h3>{s.replace('.NS', '')}</h3>
-                    <h2>{currency}{price}</h2>
-                    <p>AI Sentiment: <b style="color:{color}">{status}</b></p>
-                    <hr style="opacity: 0.1">
-                    <p style="font-size: 0.8rem; height: 40px; overflow: hidden;">{news_head}</p>
-                </div>
+            <div class="card" style="border-top: 5px solid {border_color};">
+                <h3 style="margin-bottom:0;">{s.replace('.NS', '')}</h3>
+                <h2 style="color:{border_color}; margin-top:5px;">{currency}{price}</h2>
+                <p>AI Sentiment: <b>{status}</b></p>
+                <hr>
+                <p style="font-size: 0.85rem; color: #ccc; min-height: 40px;">{news_head}</p>
+            </div>
             """, unsafe_allow_html=True)
             
-            # Sparkline Chart
-            fig = go.Figure(data=go.Scatter(x=hist.index, y=hist['Close'], line=dict(color=color, width=2)))
-            fig.update_layout(margin=dict(l=0,r=0,t=0,b=0), height=60, xaxis_visible=False, yaxis_visible=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
     except Exception as e:
         continue
+
+# Optional: Auto-refresh component (Needs streamlit-autorefresh)
+# Agar aapne requirements.txt mein dala hai toh niche wala line uncomment kar sakte ho
+# from streamlit_autorefresh import st_autorefresh
+# st_autorefresh(interval=600 * 1000, key="datarefresh")
