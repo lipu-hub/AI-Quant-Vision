@@ -15,33 +15,47 @@ if 'view' not in st.session_state:
 if 'selected_stock' not in st.session_state:
     st.session_state.selected_stock = None
 
-# 2. CUSTOM CSS (Fixing the alignment and spacing)
+# 2. ADVANCED CSS (Professional Card Layout)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     .stApp { background-color: #0b0e14; font-family: 'Inter', sans-serif; color: white; }
 
-    /* Landing Page Styling */
-    .hero-section { text-align: center; padding: 60px 20px; }
-    .hero-title { font-size: 3.5rem; font-weight: 700; margin-bottom: 10px; letter-spacing: -1.5px; line-height: 1.1; }
-    .feature-card { background: #161a25; padding: 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); text-align: center; height: 100%; }
-
-    /* Dashboard Grid Styling */
-    div.stButton > button {
-        background: linear-gradient(145deg, #1e2230, #161a25);
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.1);
-        color: white;
-        height: 100px;
-        width: 100%;
-        transition: 0.3s;
-        font-weight: bold;
-        margin-bottom: 5px;
+    /* Modern Card Container */
+    .stock-card {
+        background: #161a25;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        text-align: center;
+        transition: 0.3s ease;
+        margin-bottom: 20px;
     }
-    div.stButton > button:hover { border-color: #00ffcc; transform: translateY(-2px); }
-    
-    .stock-label { font-size: 0.9rem; color: #8890a6; text-align: center; margin-bottom: 2px; }
-    .price-label { font-size: 1.4rem; font-weight: bold; text-align: center; }
+    .stock-card:hover {
+        border-color: #00ffcc;
+        background: #1c2130;
+        transform: translateY(-5px);
+    }
+
+    /* Button Styling inside Card */
+    div.stButton > button {
+        background-color: transparent !important;
+        border: 1px solid #00ffcc !important;
+        color: #00ffcc !important;
+        border-radius: 8px;
+        font-weight: 700;
+        width: 100%;
+        margin-top: 10px;
+    }
+    div.stButton > button:hover {
+        background-color: #00ffcc !important;
+        color: #0b0e14 !important;
+    }
+
+    /* Text Sizes */
+    .symbol-txt { color: #8890a6; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;}
+    .price-txt { font-size: 1.8rem; font-weight: 700; color: #ffffff; margin: 5px 0; }
+    .change-txt { font-size: 1rem; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -49,107 +63,99 @@ st.markdown("""
 stocks_list = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS", "TATAMOTORS.NS", "ZOMATO.NS", "BTC-USD"]
 
 @st.cache_data(ttl=600)
-def get_data(s, period="1mo"):
+def get_market_data(s):
     try:
-        return yf.Ticker(s).history(period=period)
+        data = yf.Ticker(s).history(period="1mo")
+        return data
     except:
         return None
 
 # --- UI LOGIC ---
 
-# 🏠 PAGE 1: LANDING PAGE
+# 🏠 PAGE 1: LANDING
 if st.session_state.view == 'landing':
     st.markdown("""
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0;">
         <h2 style="margin:0;">MarketMind <span style="color:#00ffcc;">AI</span></h2>
-        <div style="color:#8890a6; font-weight: 600;">Trusted by 500k+ Traders</div>
+        <div style="color:#8890a6; font-size:0.9rem;">v3.0 GENERATIVE TERMINAL</div>
     </div>
-    <hr style="opacity: 0.1; margin-bottom: 40px;">
     """, unsafe_allow_html=True)
-
+    
     st.markdown("""
-    <div class="hero-section">
-        <div style="background: rgba(0, 255, 204, 0.1); color: #00ffcc; display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-bottom: 20px; font-weight: bold;">
-            v3.0 GENERATIVE AI TERMINAL
-        </div>
-        <h1 class="hero-title">Trading made me the<br><span style="color:#00ffcc;">freedom</span> to focus on matters.</h1>
-        <p style="color: #8890a6; font-size: 1.1rem; margin-bottom: 40px;">A trusted service provider for over 25 years. Experience high-fidelity AI market predictions,<br>real-time dashboards, and secure technical analysis.</p>
+    <div style="text-align: center; padding: 100px 20px;">
+        <h1 style="font-size: 4rem; font-weight: 800; letter-spacing: -2px; line-height: 1;">Trading made me the<br><span style="color:#00ffcc;">freedom</span> to focus on matters.</h1>
+        <p style="color:#8890a6; font-size: 1.2rem; margin-top: 20px;">Experience institutional-grade AI predictions and real-time analytics.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns([1.5, 1, 1.5])
+    c1, c2, c3 = st.columns([2, 1, 2])
     with c2:
         if st.button("🚀 ENTER TERMINAL", use_container_width=True):
             st.session_state.view = 'grid'
             st.rerun()
 
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    f1, f2, f3 = st.columns(3)
-    with f1: st.markdown('<div class="feature-card"><h3>25 Years Trust</h3><p style="color:#8890a6;">Serving global markets with precision.</p></div>', unsafe_allow_html=True)
-    with f2: st.markdown('<div class="feature-card"><h3>AI Predictions</h3><p style="color:#8890a6;">Neural networks for price forecasting.</p></div>', unsafe_allow_html=True)
-    with f3: st.markdown('<div class="feature-card"><h3>Secure Trading</h3><p style="color:#8890a6;">Privacy is our top priority.</p></div>', unsafe_allow_html=True)
-
-# 📊 PAGE 2: DASHBOARD OVERVIEW
+# 📊 PAGE 2: DASHBOARD
 elif st.session_state.view == 'grid':
-    col_h1, col_h2 = st.columns([4, 1])
-    with col_h1: st.title("Dashboard Overview")
-    with col_h2: 
+    col_h1, col_h2 = st.columns([5, 1])
+    with col_h1:
+        st.title("Market Overview")
+    with col_h2:
         if st.button("🏠 Home"):
             st.session_state.view = 'landing'
             st.rerun()
 
     st.markdown("---")
-    
-    # Grid of 4 columns
-    for row_idx in range(0, len(stocks_list), 4):
-        cols = st.columns(4)
-        for col_idx in range(4):
-            stock_idx = row_idx + col_idx
-            if stock_idx < len(stocks_list):
-                s = stocks_list[stock_idx]
-                df = get_data(s)
-                if df is not None and not df.empty:
-                    curr = round(df['Close'].iloc[-1], 2)
-                    prev = round(df['Close'].iloc[-2], 2)
-                    chg = round(((curr - prev) / prev) * 100, 2)
-                    color = "#00ffcc" if chg >= 0 else "#ff4b4b"
-                    
-                    with cols[col_idx]:
-                        # Card structure
-                        st.markdown(f"<div class='stock-label'>{s}</div>", unsafe_allow_html=True)
-                        if st.button(f"₹{curr}", key=f"btn_{s}"):
-                            st.session_state.selected_stock = s
-                            st.session_state.view = 'detail'
-                            st.rerun()
-                        st.markdown(f"<div style='color:{color}; text-align:center; font-weight:bold; margin-top:-10px;'>{chg}% {'▲' if chg >= 0 else '▼'}</div>", unsafe_allow_html=True)
-                        st.markdown("<br>", unsafe_allow_html=True)
 
-# 🔍 PAGE 3: DETAIL VIEW
+    # Creating a 4-column Grid
+    rows = [stocks_list[i:i + 4] for i in range(0, len(stocks_list), 4)]
+    
+    for row in rows:
+        cols = st.columns(4)
+        for idx, s in enumerate(row):
+            df = get_market_data(s)
+            if df is not None and not df.empty:
+                curr = round(df['Close'].iloc[-1], 2)
+                prev = round(df['Close'].iloc[-2], 2)
+                chg = round(((curr - prev) / prev) * 100, 2)
+                color = "#00ffcc" if chg >= 0 else "#ff4b4b"
+                
+                with cols[idx]:
+                    # Professional Card UI
+                    st.markdown(f"""
+                    <div class="stock-card">
+                        <div class="symbol-txt">{s.replace('.NS','')}</div>
+                        <div class="price-txt">₹{curr}</div>
+                        <div class="change-txt" style="color: {color};">
+                            {'▲' if chg >= 0 else '▼'} {abs(chg)}%
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Selection Button
+                    if st.button(f"Analyze {s.split('.')[0]}", key=f"btn_{s}"):
+                        st.session_state.selected_stock = s
+                        st.session_state.view = 'detail'
+                        st.rerun()
+
+# 🔍 PAGE 3: DETAIL
 elif st.session_state.view == 'detail':
     s = st.session_state.selected_stock
-    df = get_data(s, period="3mo")
+    df = get_market_data(s)
     
     if st.button("⬅️ Back to Dashboard"):
         st.session_state.view = 'grid'
         st.rerun()
+
+    st.title(f"Live Analysis: {s}")
     
-    st.header(f"Analysis: {s}")
-    
-    col_left, col_right = st.columns([2, 1])
-    
-    with col_left:
+    c1, c2 = st.columns([2, 1])
+    with c1:
         fig = go.Figure(data=[go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'])])
-        fig.update_layout(template="plotly_dark", height=500, xaxis_rangeslider_visible=False, margin=dict(l=0,r=0,t=0,b=0))
+        fig.update_layout(template="plotly_dark", height=500, xaxis_rangeslider_visible=False)
         st.plotly_chart(fig, use_container_width=True)
-        
-    with col_right:
-        st.subheader("Market Intelligence")
-        curr = round(df['Close'].iloc[-1], 2)
-        st.metric("Current Price", f"₹{curr}")
-        
-        # Volatility Based Target
+    with c2:
+        st.subheader("AI Forecast")
+        st.metric("Current Price", f"₹{round(df['Close'].iloc[-1], 2)}")
+        # Simple Prediction Logic
         vol = (df['High'] - df['Low']).tail(10).mean()
-        st.metric("AI Target", f"₹{round(curr + vol*1.5, 2)}", delta=f"{round(vol*1.5, 2)}")
-        st.metric("Stop-Loss", f"₹{round(curr - vol*1.2, 2)}", delta=f"-{round(vol*1.2, 2)}", delta_color="inverse")
-        
-        st.info("Trend: Positive momentum detected over the last 10 sessions.")
+        st.metric("Target", f"₹{round(df['Close'].iloc[-1] + vol*1.5, 2)}", delta=f"{round(vol*1.5, 2)}")
