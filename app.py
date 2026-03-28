@@ -39,22 +39,50 @@ for i in range(0, len(stocks_list), 4):
             s = stocks_list[i + j]
             try:
                 t = yf.Ticker(s)
-                df = t.history(period="7d") # 7 days for the graph
-                if df.empty: continue
+                df = t.history(period="7d")
+                if df.empty:
+                    continue
                 
                 curr = round(df['Close'].iloc[-1], 2)
                 prev = round(df['Close'].iloc[-2], 2)
                 p_change = round(((curr - prev) / prev) * 100, 2)
-                
-                # Simple RSI for Signal
-                delta = df['Close'].diff()
-                gain = delta.where(delta > 0, 0).rolling(5).mean().iloc[-1]
-                loss = -delta.where(delta < 0, 0).rolling(5).mean().iloc[-1]
-                rsi = round(100 - (100 / (1 + (gain/(loss if loss != 0 else 0.1)))), 2)
-                
                 color = "#00ff88" if p_change >= 0 else "#ff4b4b"
                 
                 with cols[j]:
-                    # Info Card
+                    # Portfolio Logic - Fixed Indentation
                     pnl_str = ""
                     if s == my_stock and buy_price > 0:
+                        diff = round(curr - buy_price, 2)
+                        p_color = "#00ff88" if diff >= 0 else "#ff4b4b"
+                        pnl_str = f'<div class="pnl-text" style="color:{p_color};">P&L: {diff}</div>'
+
+                    # Rendering Info Card
+                    st.markdown(f"""
+                    <div class="compact-card" style="border-top-color: {color};">
+                        <div class="stock-symbol">{s.replace('.NS','')}</div>
+                        <div class="price-text">{curr} <span style="font-size:0.8rem; color:{color};">({p_change}%)</span></div>
+                        {pnl_str}
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Plotly Sparkline (The Graph)
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=df.index, y=df['Close'], 
+                        mode='lines', 
+                        line=dict(color=color, width=2), 
+                        fill='tozeroy', 
+                        fillcolor=f"rgba({ '0,255,136,0.1' if p_change >= 0 else '255,75,75,0.1' })"
+                    ))
+                    fig.update_layout(
+                        margin=dict(l=0,r=0,t=0,b=0), 
+                        height=60, 
+                        xaxis=dict(visible=False), 
+                        yaxis=dict(visible=False), 
+                        paper_bgcolor='rgba(0,0,0,0)', 
+                        plot_bgcolor='rgba(0,0,0,0)', 
+                        showlegend=False
+                    )
+                    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            except:
+                continue
