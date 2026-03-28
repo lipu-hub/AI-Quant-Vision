@@ -2,5 +2,5 @@ yfinance
 streamlit
 plotly
 pandas
-vaderSentiment
 streamlit-autorefresh
+requests
