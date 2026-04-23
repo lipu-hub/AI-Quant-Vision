@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Odisha CollegeHub – Find Your Dream College in Odisha</title>
+<meta name="description" content="Discover 500+ colleges in Odisha. Compare fees, placements, courses. Get AI counseling from Vidya. Apply online today."/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<!-- CANVAS PARTICLES -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- DYNAMIC BACKGROUND SLIDER -->
+<div id="bg-slider"></div>
+
+<!-- BG DOTS INDICATOR -->
+<div class="bg-dots" id="bg-dots"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav" id="mobileNav">
+  <button class="mobile-close" onclick="closeMobileNav()">✕</button>
+  <span class="mobile-nav-link" onclick="showPage('home')">Home</span>
+  <span class="mobile-nav-link" onclick="showPage('colleges')">Colleges</span>
+  <span class="mobile-nav-link" onclick="showPage('exams')">Exams</span>
+  <span class="mobile-nav-link" onclick="showPage('rankings')">Rankings</span>
+  <span class="mobile-nav-link" onclick="showPage('scholarships')">Scholarships</span>
+  <span class="mobile-nav-link" onclick="showPage('news')">News</span>
+</div>
+
+<!-- HEADER -->
+<header id="mainHeader">
+  <div class="header-inner">
+    <div class="logo" onclick="showPage('home')">
+      <div class="logo-mark">O</div>
+      <div class="logo-name">Odisha <em>CollegeHub</em></div>
+    </div>
+    <nav>
+      <button class="nav-link active" data-page="home" onclick="showPage('home')">Home</button>
+      <button class="nav-link" data-page="colleges" onclick="showPage('colleges')">Colleges</button>
+      <button class="nav-link" data-page="exams" onclick="showPage('exams')">Exams</button>
+      <button class="nav-link" data-page="rankings" onclick="showPage('rankings')">Rankings</button>
+      <button class="nav-link" data-page="scholarships" onclick="showPage('scholarships')">Scholarships</button>
+      <button class="nav-link" data-page="news" onclick="showPage('news')">News</button>
+    </nav>
+    <div class="header-actions" id="headerActions">
+      <button class="btn-login" onclick="openModal('login')">Login</button>
+      <button class="btn-register" onclick="openModal('register')">Register Free</button>
+    </div>
+    <div class="hamburger" onclick="openMobileNav()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</header>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" style="position:relative">
+    <span class="modal-close-icon" onclick="closeModal()">✕</span>
+    <div class="modal-title">Welcome to CollegeHub 🎓</div>
+    <div class="modal-sub">Odisha's #1 College Discovery Platform</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchAuthTab('login')">Login</button>
+      <button class="modal-tab" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <div data-auth-tab="login">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="Your password"/>
+      </div>
+      <button class="btn-submit" onclick="doLogin()">Sign In →</button>
+      <div class="social-login">
+        <button class="btn-social" onclick="showToast('Google login coming soon!','info')">
+          <span style="font-size:18px">G</span> Google
+        </button>
+        <button class="btn-social" onclick="showToast('Facebook login coming soon!','info')">
+          <span style="font-size:18px">f</span> Facebook
+        </button>
+      </div>
+    </div>
+
+    <div data-auth-tab="register" style="display:none">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="regName" placeholder="Your full name"/>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="regEmail" placeholder="you@example.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="regPass" placeholder="Create a password"/>
+      </div>
+      <button class="btn-submit" onclick="doRegister()">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- COLLEGE DETAIL MODAL -->
+<div class="college-detail-modal" id="collegeDetailModal" onclick="if(event.target===this)closeCollegeDetail()">
+  <div class="cdm-box">
+    <div class="cdm-hero">
+      <div class="cdm-hero-img" id="cdmHeroImg"></div>
+      <button class="cdm-close" onclick="closeCollegeDetail()">✕</button>
+      <div class="cdm-header">
+        <div class="cdm-logo" id="cdmLogoEl"></div>
+        <div class="cdm-info">
+          <h2 id="cdmCollegeName"></h2>
+          <p id="cdmCollegeMeta"></p>
+        </div>
+      </div>
+    </div>
+    <div class="cdm-tabs">
+      <button class="cdm-tab active" onclick="switchCDMTab('overview',this)">Overview</button>
+      <button class="cdm-tab" onclick="switchCDMTab('courses',this)">Courses</button>
+      <button class="cdm-tab" onclick="switchCDMTab('placements',this)">Placements</button>
+      <button class="cdm-tab" onclick="switchCDMTab('campus',this)">Campus</button>
+    </div>
+    <div class="cdm-section active" id="cdm-overview"></div>
+    <div class="cdm-section" id="cdm-courses"></div>
+    <div class="cdm-section" id="cdm-placements"></div>
+    <div class="cdm-section" id="cdm-campus"></div>
+    <div class="cdm-footer" id="cdmFooterBtns"></div>
+  </div>
+</div>
+
+<!-- COMPARE BAR -->
+<div class="compare-bar" id="compareBar">
+  <div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap">Compare</div>
+  <div class="compare-bar-items">
+    <div class="compare-slot" id="cslot0">+ Add College</div>
+    <div class="compare-slot" id="cslot1">+ Add College</div>
+    <div class="compare-slot" id="cslot2">+ Add College</div>
+  </div>
+  <button class="btn-do-compare" id="doCompareBtn" disabled onclick="runComparison()">Compare →</button>
+  <button class="compare-bar-close" onclick="clearComparison()">✕</button>
+</div>
+
+<!-- AI COUNSELOR FAB -->
+<button class="ai-counselor-fab" onclick="toggleAIPanel()" title="AI Counselor Vidya">
+  🎓
+  <span class="fab-badge">AI</span>
+</button>
+
+<!-- AI PANEL -->
+<div class="ai-panel" id="aiPanel">
+  <div class="ai-panel-header">
+    <div class="ai-panel-avatar">🎓</div>
+    <div class="ai-panel-title">
+      <div class="ai-panel-name">Vidya – AI Counselor</div>
+      <div class="ai-panel-status">Online • Powered by Claude</div>
+    </div>
+    <button class="ai-panel-close" onclick="toggleAIPanel()">✕</button>
+  </div>
+  <div class="ai-messages" id="aiMessages">
+    <div class="ai-msg bot">Hi! I'm Vidya 👋 I can help you find the perfect college in Odisha. What stream are you interested in?</div>
+  </div>
+  <div class="ai-typing" id="aiTyping">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="ai-quick-replies" id="aiQuickReplies">
+    <span class="ai-qr" onclick="sendAIMessage('Engineering colleges')">⚙️ Engineering</span>
+    <span class="ai-qr" onclick="sendAIMessage('Medical colleges')">🏥 Medical</span>
+    <span class="ai-qr" onclick="sendAIMessage('MBA programs')">💼 MBA</span>
+    <span class="ai-qr" onclick="sendAIMessage('Government colleges with low fees')">🏛️ Affordable</span>
+  </div>
+  <div class="ai-input-row">
+    <input class="ai-input" id="aiInput" placeholder="Ask anything about colleges…" onkeydown="if(event.key==='Enter')sendAIMessage()"/>
+    <button class="ai-send-btn" onclick="sendAIMessage()">➤</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     PAGE: HOME
+════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-particles" id="heroParticles"></div>
+    <div class="hero-content">
+      <div class="hero-badge">🎓 Odisha's #1 College Discovery Platform</div>
+      <h1>Find Your <span>Dream College</span><br/>in Odisha</h1>
+      <p>Explore 500+ colleges across Bhubaneswar, Cuttack, Rourkela & beyond. Compare fees, placements, and get AI-powered guidance today.</p>
+
+      <div style="position:relative;max-width:740px;margin:0 auto 24px">
+        <div class="search-wrapper">
+          <input type="text" id="heroSearch" placeholder="Search colleges, courses, universities…"
+            oninput="handleSearchInput(this.value)" onfocus="showSuggestions()" onblur="setTimeout(hideSuggestions,200)"/>
+          <select id="heroCity">
+            <option>All Cities</option>
+            <option>Bhubaneswar</option>
+            <option>Rourkela</option>
+            <option>Cuttack</option>
+            <option>Sambalpur</option>
+            <option>Berhampur</option>
+            <option>Balasore</option>
+          </select>
+          <button class="search-btn" onclick="doSearch()">🔍 Search</button>
+        </div>
+        <div class="ai-suggestions" id="aiSuggestions">
+          <div class="ai-sugg-header">Suggestions</div>
+        </div>
+      </div>
+
+      <div class="quick-tags">
+        <span class="qtag" onclick="quickSearch('Engineering')">⚙️ Engineering</span>
+        <span class="qtag" onclick="quickSearch('Medical')">🏥 Medical</span>
+        <span class="qtag" onclick="quickSearch('MBA')">💼 MBA</span>
+        <span class="qtag" onclick="quickSearch('Law')">⚖️ Law</span>
+        <span class="qtag" onclick="quickSearch('Science')">🔬 Science</span>
+        <span class="qtag" onclick="quickSearch('Government')">🏛️ Govt</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hs-item"><div class="hs-num" data-count="500">0</div><div class="hs-lbl">Colleges Listed</div></div>
+        <div class="hs-item"><div class="hs-num" data-count="1200">0</div><div class="hs-lbl">Courses</div></div>
+        <div class="hs-item"><div class="hs-num" data-count="50000">0</div><div class="hs-lbl">Students Helped</div></div>
+        <div class="hs-item"><div class="hs-num" data-count="30">0</div><div class="hs-lbl">Entrance Exams</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STREAM SECTION -->
+  <section class="section stream-bg">
+    <div class="section-inner">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Browse by <em>Stream</em></div>
+          <div class="sec-sub">Explore colleges by your preferred course</div>
+        </div>
+      </div>
+      <div class="stream-grid">
+        <div class="stream-card" onclick="filterColleges('Engineering')">
+          <span class="sc-icon">⚙️</span>
+          <div class="sc-name">Engineering</div>
+          <div class="sc-count">180+ colleges</div>
+        </div>
+        <div class="stream-card" onclick="filterColleges('Medical')">
+          <span class="sc-icon">🏥</span>
+          <div class="sc-name">Medical</div>
+          <div class="sc-count">60+ colleges</div>
+        </div>
+        <div class="stream-card" onclick="filterColleges('MBA')">
+          <span class="sc-icon">💼</span>
+          <div class="sc-name">Management</div>
+          <div class="sc-count">90+ colleges</div>
+        </div>
+        <div class="stream-card" onclick="quickSearch('Law')">
+          <span class="sc-icon">⚖️</span>
+          <div class="sc-name">Law</div>
+          <div class="sc-count">28+ colleges</div>
+        </div>
+        <div class="stream-card" onclick="filterColleges('Science')">
+          <span class="sc-icon">🔬</span>
+          <div class="sc-name">Science</div>
+          <div class="sc-count">120+ colleges</div>
+        </div>
+        <div class="stream-card" onclick="filterColleges('Arts')">
+          <span class="sc-icon">🎨</span>
+          <div class="sc-name">Arts</div>
+          <div class="sc-count">200+ colleges</div>
+        </div>
+        <div class="stream-card" onclick="quickSearch('Architecture')">
+          <span class="sc-icon">🏗️</span>
+          <div class="sc-name">Architecture</div>
+          <div class="sc-count">14+ colleges</div>
+        </div>
+        <div class="stream-card" onclick="quickSearch('Pharmacy')">
+          <span class="sc-icon">💊</span>
+          <div class="sc-name">Pharmacy</div>
+          <div class="sc-count">45+ colleges</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOP COLLEGES -->
+  <section class="section" style="background:var(--white)">
+    <div class="section-inner">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Top <em>Colleges</em> in Odisha</div>
+          <div class="sec-sub">Ranked by placement, faculty & infrastructure</div>
+        </div>
+        <span class="see-all" onclick="showPage('colleges')">View All →</span>
+      </div>
+      <div class="filter-bar" id="homeCollegeFilter">
+        <button class="fbtn active" onclick="filterHomeColleges(this,'All')">All</button>
+        <button class="fbtn" onclick="filterHomeColleges(this,'Engineering')">Engineering</button>
+        <button class="fbtn" onclick="filterHomeColleges(this,'Medical')">Medical</button>
+        <button class="fbtn" onclick="filterHomeColleges(this,'MBA')">MBA</button>
+        <button class="fbtn" onclick="filterHomeColleges(this,'Government')">Govt.</button>
+      </div>
+      <div class="college-grid" id="homeCollegeGrid"></div>
+    </div>
+  </section>
+
+  <!-- STATS BANNER -->
+  <section class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num">500+</div>
+        <div class="stat-lbl">Colleges in Odisha</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">₹68L</div>
+        <div class="stat-lbl">Highest Package (XIM)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">50K+</div>
+        <div class="stat-lbl">Students Guided</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">30+</div>
+        <div class="stat-lbl">Entrance Exams Covered</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXAMS (HOME) -->
+  <section class="section" style="background:var(--light)">
+    <div class="section-inner">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Upcoming <em>Exams</em></div>
+          <div class="sec-sub">Important entrance exam dates and registration info</div>
+        </div>
+        <span class="see-all" onclick="showPage('exams')">All Exams →</span>
+      </div>
+      <div class="exam-page-grid" id="homeExamGrid"></div>
+    </div>
+  </section>
+
+  <!-- NEWS (HOME) -->
+  <section class="section" style="background:var(--white)">
+    <div class="section-inner">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Latest <em>News</em></div>
+          <div class="sec-sub">Admissions, results & scholarships</div>
+        </div>
+        <span class="see-all" onclick="showPage('news')">Read More →</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px" id="homeNewsGrid"></div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="section stream-bg">
+    <div class="section-inner">
+      <div class="sec-head">
+        <div>
+          <div class="sec-title" style="color:#fff">What <em style="color:var(--gold2)">Students</em> Say</div>
+          <div class="sec-sub">Real stories from CollegeHub users</div>
+        </div>
+      </div>
+      <div class="testimonial-grid" id="testimonialsGrid"></div>
+    </div>
+  </section>
+
+  <!-- FOOTER (HOME) -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <span class="logo-name">Odisha <em style="color:var(--saffron)">CollegeHub</em></span>
+          <p>Odisha's most trusted college discovery platform. Helping students find their perfect college since 2020.</p>
+        </div>
+        <div>
+          <div class="footer-col-title">Explore</div>
+          <span class="footer-link" onclick="showPage('colleges')">All Colleges</span>
+          <span class="footer-link" onclick="showPage('exams')">Entrance Exams</span>
+          <span class="footer-link" onclick="showPage('rankings')">Rankings</span>
+          <span class="footer-link" onclick="showPage('scholarships')">Scholarships</span>
+        </div>
+        <div>
+          <div class="footer-col-title">Streams</div>
+          <span class="footer-link" onclick="filterColleges('Engineering')">Engineering</span>
+          <span class="footer-link" onclick="filterColleges('Medical')">Medical</span>
+          <span class="footer-link" onclick="filterColleges('MBA')">MBA/Management</span>
+          <span class="footer-link" onclick="filterColleges('Arts')">Arts & Science</span>
+        </div>
+        <div>
+          <div class="footer-col-title">Quick Links</div>
+          <span class="footer-link" onclick="showToast('Coming soon!','info')">About Us</span>
+          <span class="footer-link" onclick="showToast('Coming soon!','info')">Contact</span>
+          <span class="footer-link" onclick="showToast('Coming soon!','info')">Privacy Policy</span>
+          <span class="footer-link" onclick="showToast('Coming soon!','info')">Terms of Use</span>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2025 Odisha CollegeHub. All rights reserved.</p>
+        <p>Made with ❤️ for Odisha Students</p>
+      </div>
+    </div>
+  </footer>
+
+</div><!-- /page-home -->
+
+
+<!-- ════════════════════════════════════════
+     PAGE: COLLEGES
+════════════════════════════════════════ -->
+<div class="page" id="page-colleges">
+  <div class="page-hero">
+    <div class="page-hero-inner">
+      <div class="breadcrumb">
+        <span onclick="showPage('home')">Home</span>
+        <span class="sep">›</span>
+        <span class="cur">Colleges</span>
+      </div>
+      <h1>Colleges in Odisha</h1>
+      <p>Explore 500+ colleges across engineering, medical, MBA, arts, science and more streams.</p>
+    </div>
+  </div>
+
+  <div style="max-width:1360px;margin:auto;padding:24px 32px 0">
+    <div class="filter-bar" id="colleges-filter-bar">
+      <button class="fbtn active" onclick="activeStream='All';renderCollegePage();highlightFilterBtn('All');this.classList.add('active')">All</button>
+      <button class="fbtn" onclick="activeStream='Engineering';renderCollegePage();this.closest('.filter-bar').querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Engineering</button>
+      <button class="fbtn" onclick="activeStream='Medical';renderCollegePage();this.closest('.filter-bar').querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Medical</button>
+      <button class="fbtn" onclick="activeStream='MBA';renderCollegePage();this.closest('.filter-bar').querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">MBA</button>
+      <button class="fbtn" onclick="activeStream='Government';renderCollegePage();this.closest('.filter-bar').querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Govt.</button>
+      <button class="fbtn" onclick="activeStream='Private';renderCollegePage();this.closest('.filter-bar').querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Private</button>
+      <button class="fbtn" onclick="activeStream='Arts';renderCollegePage();this.closest('.filter-bar').querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">Arts</button>
+    </div>
+  </div>
+
+  <div class="colleges-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sb-title">🔍 Filter Colleges</div>
+
+      <div class="sb-group">
+        <div class="sb-group-title">College Type</div>
+        <div class="sb-option"><input type="checkbox" id="type-govt"/><label for="type-govt">Government</label></div>
+        <div class="sb-option"><input type="checkbox" id="type-private"/><label for="type-private">Private</label></div>
+        <div class="sb-option"><input type="checkbox" id="type-deemed"/><label for="type-deemed">Deemed University</label></div>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-title">Stream</div>
+        <div class="sb-option"><input type="checkbox" id="str-eng"/><label for="str-eng">Engineering</label></div>
+        <div class="sb-option"><input type="checkbox" id="str-med"/><label for="str-med">Medical</label></div>
+        <div class="sb-option"><input type="checkbox" id="str-mba"/><label for="str-mba">MBA</label></div>
+        <div class="sb-option"><input type="checkbox" id="str-arts"/><label for="str-arts">Arts</label></div>
+        <div class="sb-option"><input type="checkbox" id="str-sci"/><label for="str-sci">Science</label></div>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-title">Annual Fees (Max)</div>
+        <div class="sb-range">
+          <input type="range" min="10000" max="1500000" step="10000" value="1500000" oninput="updateFeeRange(this.value)"/>
+          <div class="sb-range-val" id="feeRangeVal">₹15L</div>
+        </div>
+      </div>
+
+      <div class="sb-group">
+        <div class="sb-group-title">Facilities</div>
+        <div class="sb-option"><input type="checkbox" id="fac-hostel"/><label for="fac-hostel">Hostel Available</label></div>
+        <div class="sb-option"><input type="checkbox" id="fac-sports"/><label for="fac-sports">Sports Facilities</label></div>
+        <div class="sb-option"><input type="checkbox" id="fac-lab"/><label for="fac-lab">Research Labs</label></div>
+      </div>
+
+      <button class="apply-filter-btn" onclick="applyFilters()">Apply Filters</button>
+      <button class="clear-btn" onclick="clearFilters()">Clear All</button>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="colleges-main">
+      <div class="cm-topbar">
+        <div class="cm-count">Showing <strong id="collegeCount">12</strong> colleges</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="cm-sort">
+            <select onchange="sortColleges(this.value)">
+              <option value="rank">Sort: Top Ranked</option>
+              <option value="rating">Sort: Highest Rating</option>
+              <option value="fees_low">Sort: Fees (Low–High)</option>
+              <option value="fees_high">Sort: Fees (High–Low)</option>
+            </select>
+          </div>
+          <div class="cm-view-toggle">
+            <button class="view-btn active" onclick="setView('list',this)" title="List View">☰</button>
+            <button class="view-btn" onclick="setView('grid',this)" title="Grid View">⊞</button>
+          </div>
+        </div>
+      </div>
+      <div id="collegeListEl" class="college-list"></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        <p>© 2025 Odisha CollegeHub</p>
+        <p style="cursor:pointer" onclick="showPage('home')">← Back to Home</p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE: EXAMS
+════════════════════════════════════════ -->
+<div class="page" id="page-exams">
+  <div class="page-hero">
+    <div class="page-hero-inner">
+      <div class="breadcrumb">
+        <span onclick="showPage('home')">Home</span>
+        <span class="sep">›</span>
+        <span class="cur">Exams</span>
+      </div>
+      <h1>Entrance Exams 2025</h1>
+      <p>All national and state-level entrance exams for Odisha colleges — dates, eligibility & registration.</p>
+    </div>
+  </div>
+  <section class="section">
+    <div class="section-inner">
+      <div class="filter-bar" id="examFilter">
+        <button class="fbtn active" onclick="filterExams(this,'All')">All Exams</button>
+        <button class="fbtn" onclick="filterExams(this,'Engineering')">Engineering</button>
+        <button class="fbtn" onclick="filterExams(this,'Medical')">Medical</button>
+        <button class="fbtn" onclick="filterExams(this,'MBA')">MBA</button>
+        <button class="fbtn" onclick="filterExams(this,'State')">State Level</button>
+        <button class="fbtn" onclick="filterExams(this,'National')">National Level</button>
+      </div>
+      <div class="exam-page-grid" id="examPageGrid"></div>
+    </div>
+  </section>
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        <p>© 2025 Odisha CollegeHub</p>
+        <p style="cursor:pointer" onclick="showPage('home')">← Back to Home</p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE: RANKINGS
+════════════════════════════════════════ -->
+<div class="page" id="page-rankings">
+  <div class="page-hero">
+    <div class="page-hero-inner">
+      <div class="breadcrumb">
+        <span onclick="showPage('home')">Home</span>
+        <span class="sep">›</span>
+        <span class="cur">Rankings</span>
+      </div>
+      <h1>Odisha College Rankings 2025</h1>
+      <p>NIRF-based rankings updated for 2025. Evaluated on teaching, research, placements & infrastructure.</p>
+    </div>
+  </div>
+  <section class="section">
+    <div class="section-inner">
+      <div class="filter-bar" id="rankFilter">
+        <button class="fbtn active" onclick="filterRanks(this,'All')">Overall</button>
+        <button class="fbtn" onclick="filterRanks(this,'Engineering')">Engineering</button>
+        <button class="fbtn" onclick="filterRanks(this,'Medical')">Medical</button>
+        <button class="fbtn" onclick="filterRanks(this,'University')">Universities</button>
+        <button class="fbtn" onclick="filterRanks(this,'Government')">Government</button>
+      </div>
+      <div class="rank-table-wrapper">
+        <table class="rank-table" id="rankTableEl">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>College</th>
+              <th>Stream</th>
+              <th>NIRF Score</th>
+              <th>Rating</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="rankTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        <p>© 2025 Odisha CollegeHub</p>
+        <p style="cursor:pointer" onclick="showPage('home')">← Back to Home</p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE: SCHOLARSHIPS
+════════════════════════════════════════ -->
+<div class="page" id="page-scholarships">
+  <div class="page-hero">
+    <div class="page-hero-inner">
+      <div class="breadcrumb">
+        <span onclick="showPage('home')">Home</span>
+        <span class="sep">›</span>
+        <span class="cur">Scholarships</span>
+      </div>
+      <h1>Scholarships for Odisha Students</h1>
+      <p>Government and private scholarships available for students studying in Odisha colleges.</p>
+    </div>
+  </div>
+  <section class="section">
+    <div class="section-inner">
+      <div class="filter-bar">
+        <button class="fbtn active" onclick="setFilterActive(this)">All</button>
+        <button class="fbtn" onclick="setFilterActive(this)">Government</button>
+        <button class="fbtn" onclick="setFilterActive(this)">Merit Based</button>
+        <button class="fbtn" onclick="setFilterActive(this)">Need Based</button>
+        <button class="fbtn" onclick="setFilterActive(this)">SC/ST/OBC</button>
+      </div>
+      <div class="scholar-grid" id="scholarGrid"></div>
+    </div>
+  </section>
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        <p>© 2025 Odisha CollegeHub</p>
+        <p style="cursor:pointer" onclick="showPage('home')">← Back to Home</p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+
+<!-- ════════════════════════════════════════
+     PAGE: NEWS
+════════════════════════════════════════ -->
+<div class="page" id="page-news">
+  <div class="page-hero">
+    <div class="page-hero-inner">
+      <div class="breadcrumb">
+        <span onclick="showPage('home')">Home</span>
+        <span class="sep">›</span>
+        <span class="cur">News & Updates</span>
+      </div>
+      <h1>Latest Education News</h1>
+      <p>Admissions, results, rankings, scholarships and more from Odisha colleges.</p>
+    </div>
+  </div>
+  <div class="news-layout">
+    <div class="news-main" id="newsMain"></div>
+    <aside class="news-sidebar">
+      <div class="ns-widget">
+        <div class="ns-widget-title">🔥 Trending</div>
+        <div id="trendingNews"></div>
+      </div>
+      <div class="ns-widget">
+        <div class="ns-widget-title">📅 Important Dates</div>
+        <div style="font-size:13.5px;color:var(--gray);line-height:2.4">
+          <div>OJEE Registration: <strong style="color:var(--deep)">Mar 31</strong></div>
+          <div>NEET UG 2025: <strong style="color:var(--deep)">May 4</strong></div>
+          <div>JEE Adv 2025: <strong style="color:var(--deep)">May 18</strong></div>
+          <div>CUET UG: <strong style="color:var(--deep)">May–Jun</strong></div>
+          <div>CHSE Results: <strong style="color:var(--deep)">May 2025</strong></div>
+        </div>
+      </div>
+      <div class="ns-widget">
+        <div class="ns-widget-title">🤖 Ask Vidya AI</div>
+        <p style="font-size:13px;color:var(--gray);margin-bottom:14px">Get instant answers about colleges, exams and scholarships.</p>
+        <button onclick="toggleAIPanel()" style="width:100%;background:linear-gradient(135deg,var(--saffron),#d94e1f);color:#fff;border:none;padding:10px;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer">🎓 Ask Vidya</button>
+      </div>
+    </aside>
+  </div>
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-bottom">
+        <p>© 2025 Odisha CollegeHub</p>
+        <p style="cursor:pointer" onclick="showPage('home')">← Back to Home</p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- SCRIPTS -->
+<script src="database.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
