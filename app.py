@@ -129,10 +129,15 @@ elif st.session_state.view == 'detail':
                 </p>
             </div>
             """, unsafe_allow_html=True)
-            
-            st.write("---")
-            st.metric("Current Market Price", f"₹{round(price_now, 2)}")
-            
-            # Simple Prediction
-            std_dev = float(df_detail['Close'].pct_change().std())
-            st.info(f"💡 AI Forecast: Expecting movement towards ₹{round(price_now * (1 + std_dev), 2)}")
+            # --- Is naye code se replace karein ---
+st.write("---")
+
+# Detail page ke liye sahi symbol select karna
+detail_symbol = "$" if "-USD" in s_stock else "₹"
+
+st.metric("Current Market Price", f"{detail_symbol}{round(price_now, 2)}")
+
+# Simple Prediction
+std_dev = float(df_detail['Close'].pct_change().std())
+st.info(f"💡 AI Forecast: Expecting movement towards {detail_symbol}{round(price_now * (1 + std_dev), 2)}")
+           
