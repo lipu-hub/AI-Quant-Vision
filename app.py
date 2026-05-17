@@ -13,11 +13,16 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
 
-# 💸 BUDGET-FRIENDLY TICKERS LIST FOR EVERYONE
-tickers = ["SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS", "BTC-USD", "ETH-USD"]
+# 💸 ULTIMATE 20 BUDGET-FRIENDLY TICKERS FOR RETAIL TRADERS
+tickers = [
+    "SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS",
+    "IDEA.NS", "YESBANK.NS", "JPPOWER.NS", "RVNL.NS", "TATAPOWER.NS",
+    "NHPC.NS", "SJVN.NS", "NBCC.NS", "HUDCO.NS", "IOC.NS",
+    "SAIL.NS", "GAIL.NS", "IFCI.NS", "BTC-USD", "ETH-USD"
+]
 
 st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Budget Market Scanner & Immediate Alerts")
+st.subheader("Live 20-Asset Budget Scanner & Real-Time Alerts")
 
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
@@ -29,12 +34,13 @@ def fetch_trading_data(ticker_name):
     except Exception as e:
         return None
 
-# 🚨 DYNAMIC LIVE SCANNER FRAGMENT
+# 🚨 AUTO-SCANNER FRAGMENT (Refreshes every 15 seconds)
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
     alert_triggered = False
     
+    # Batch download current day details to save API computing latency
     for ticker in tickers:
         df = yf.download(ticker, period="1d", interval="1m", auto_adjust=True, progress=False)
         if not df.empty:
@@ -45,20 +51,20 @@ def live_alert_scanner():
             clean_name = ticker.replace(".NS", "")
             price_change = ((current_price - prev_price) / prev_price) * 100
             
-            # Algorithmic Spike Detection
-            if price_change > 0.15:
+            # Algorithmic Instant Flash Signals
+            if price_change > 0.12: # Optimized threshold for smaller stocks
                 st.toast(f"🔥 ALERT: Buy Momentum in {clean_name}!", icon="🚀")
-                st.success(f"🚨 **IMMEDIATE BUY ALERT:** {clean_name} is spiking up! Current Price: {current_price:.2f} (+{price_change:.2f}%)")
+                st.success(f"🚨 **IMMEDIATE BUY ALERT:** {clean_name} is spiking up! Price: {current_price:.2f} (+{price_change:.2f}%)")
                 alert_triggered = True
-            elif price_change < -0.15:
+            elif price_change < -0.12:
                 st.toast(f"⚠️ ALERT: Exit/Short {clean_name} immediately!", icon="💥")
-                st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} is dropping fast! Dump/Exit now! Current Price: {current_price:.2f} ({price_change:.2f}%)")
+                st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} is dropping fast! Dump/Exit now! Price: {current_price:.2f} ({price_change:.2f}%)")
                 alert_triggered = True
                 
     if not alert_triggered:
-        st.info("🔄 Scanning 1-minute order flows... Markets are stable. No immediate breakout alerts right now.")
+        st.info("🔄 Scanning 1-minute order blocks... Penny assets are stable. No massive volatility alerts right now.")
 
-# Render Live Scanner
+# Render Live Alert Tracker at the very top
 live_alert_scanner()
 st.markdown("---")
 
@@ -92,10 +98,10 @@ def generate_quant_signals(ticker_name, df, current_price):
     except Exception as e:
         return f"Signal Generation Failed: {str(e)}"
 
-# Grid Interface Layout
-cols = st.columns(4)
+# Grid Interface Layout (5 Columns Matrix for 20 assets)
+cols = st.columns(5)
 for i, ticker in enumerate(tickers):
-    with cols[i % 4]:
+    with cols[i % 5]:
         data_df = fetch_trading_data(ticker)
         
         if data_df is not None and not data_df.empty:
@@ -109,17 +115,17 @@ for i, ticker in enumerate(tickers):
                 
                 with st.container(border=True):
                     st.markdown(f"### {display_name}")
-                    st.markdown(f"# {symbol}{latest_price:,.2f}")
+                    st.markdown(f"## {symbol}{latest_price:,.2f}") # Shifted to h2 for beautiful grid alignment
                     
-                    if st.button(f"Generate Signal 🎯", key=ticker):
+                    if st.button(f"Scan Signal 🎯", key=ticker):
                         st.session_state.selected_ticker = display_name
                         st.session_state.ticker_raw_name = ticker
-                        with st.spinner(f"Scanning market algorithms for {display_name}..."):
+                        with st.spinner(f"AI calculations running for {display_name}..."):
                             analysis = generate_quant_signals(ticker, data_df, latest_price)
                             st.session_state.ai_analysis_result = analysis
                         
             except Exception as e:
-                st.error(f"Error handling ticker {ticker}")
+                st.error(f"Error handling {ticker}")
 
 # Display Interactive Technical Charts & Signals dynamically below
 if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
