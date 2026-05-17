@@ -24,7 +24,7 @@ if ui_theme == "🟠 Deep Dark Orange":
     bg_color = "#0b0f19"
     text_color = "#e2e8f0"
     card_bg = "linear-gradient(145deg, #111827, #0f172a)"
-    border_color = "rgba(249, 115, 22, 0.15)"
+    border_color = "rgba(249, 115, 22, 0.3)"
     hover_border = "#f97316"
     price_color = "#f97316" # Premium Orange Glow
     title_color = "#94a3b8"
@@ -33,7 +33,7 @@ else:
     bg_color = "#f8fafc"
     text_color = "#0f172a"
     card_bg = "#ffffff"
-    border_color = "rgba(249, 115, 22, 0.3)"
+    border_color = "rgba(234, 88, 12, 0.4)"
     hover_border = "#ea580c"
     price_color = "#ea580c" # Dark Orange for visibility
     title_color = "#475569"
@@ -41,40 +41,56 @@ else:
 
 st.markdown(f"""
 <style>
+    /* Global Background and Text Adjustment */
     .stApp {{
-        background-color: {bg_color};
-        color: {text_color};
-    }
-    h1, h2, h3 {{
+        background-color: {bg_color} !important;
         color: {text_color} !important;
-        font-weight: 700 !important;
     }}
-    /* Dynamic Glassmorphic Trading Cards Design */
+    h1, h2, h3, p, span, label {{
+        color: {text_color} !important;
+        font-weight: 600;
+    }}
+    /* Fix for Streamlit Radio/Select text colors in Light/Dark shifts */
+    div[data-testid="stMarkdownContainer"] p {{
+        color: {text_color} !important;
+    }}
+    /* Dynamic Glassmorphic Trading Cards Design with Orange Accent */
     div[data-testid="stVComponentBlock"] > div[style*="border"] {{
         border: 1px solid {border_color} !important;
         border-radius: 12px !important;
         background: {card_bg} !important;
         padding: 20px !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+        box-shadow: 0 4px 15px rgba(249, 115, 22, 0.05) !important;
         transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }}
     div[data-testid="stVComponentBlock"] > div[style*="border"]:hover {{
         transform: translateY(-2px);
         border-color: {hover_border} !important;
-        box-shadow: 0 4px 20px rgba(249, 115, 22, 0.2) !important;
+        box-shadow: 0 4px 20px rgba(249, 115, 22, 0.25) !important;
     }}
     /* Custom Typography Layouts */
     .price-text {{
         font-family: 'Courier New', Courier, monospace;
         font-size: 1.8rem !important;
         font-weight: bold;
-        color: {price_color};
+        color: {price_color} !important;
         margin: 5px 0px;
     }}
     .stock-title {{
         font-size: 1.2rem;
         font-weight: 600;
-        color: {title_color};
+        color: {title_color} !important;
+    }}
+    /* Custom Styling for Streamlit Buttons to match Orange theme */
+    button[data-testid="stBaseButton-secondary"] {{
+        background-color: transparent !important;
+        border: 1px solid {hover_border} !important;
+        color: {text_color} !important;
+        border-radius: 8px !important;
+    }}
+    button[data-testid="stBaseButton-secondary"]:hover {{
+        background-color: {hover_border} !important;
+        color: white !important;
     }}
 </style>
 """, unsafe_allow_html=True)
