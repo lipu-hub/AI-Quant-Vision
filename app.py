@@ -22,6 +22,8 @@ if "ai_analysis_result" not in st.session_state:
     st.session_state.ai_analysis_result = None
 if "ticker_raw_name" not in st.session_state:
     st.session_state.ticker_raw_name = None
+if "live_prices" not in st.session_state:
+    st.session_state.live_prices = {}
 
 if "custom_tickers" not in st.session_state:
     st.session_state.custom_tickers = [
@@ -128,9 +130,7 @@ def fetch_trading_data(ticker_name):
     except:
         return None
 
-live_status = {}
-
-# 🚨 AUTO-SCANNER FRAGMENT
+# 🚨 AUTO-SCANNER FRAGMENT WITH PERSISTENT PRICE LOCK
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
@@ -146,23 +146,22 @@ def live_alert_scanner():
             price_change = ((current_price - prev_price) / prev_price) * 100
             clean_name = ticker.replace(".NS", "")
             
-            live_status[ticker] = {"price": current_price, "change": price_change, "status": "STABLE"}
+            # Save permanently inside session state memory to avoid dataloss
+            st.session_state.live_prices[ticker] = {"price": current_price, "change": price_change, "status": "STABLE"}
             
             if price_change > 0.12:
                 st.success(f"🔥 **IMMEDIATE BUY ALERT:** {clean_name} is spiking up! Price: {current_price:.2f} (+{price_change:.2f}%)")
-                live_status[ticker]["status"] = "BUY"
+                st.session_state.live_prices[ticker]["status"] = "BUY"
                 buy_list.append(ticker)
             elif price_change < -0.12:
                 st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} is dropping fast! Dump/Exit now! Price: {current_price:.2f} ({price_change:.2f}%)")
-                live_status[ticker]["status"] = "EXIT"
+                st.session_state.live_prices[ticker]["status"] = "EXIT"
                 exit_list.append(ticker)
                 
     if not buy_list and not exit_list:
         st.info("🔄 Scanning 1-minute order blocks... Penny assets are stable. No massive volatility alerts right now.")
-    
-    return live_status
 
-current_market_snapshot = live_alert_scanner()
+live_alert_scanner()
 st.markdown("---")
 
 # 🚦 SMART FILTER BUTTONS INTERFACE
@@ -172,9 +171,9 @@ filter_choice = st.radio("Filter Dashboard Assets By:", ["Show All Active Assets
 # Filter tickers logic
 filtered_tickers = tickers
 if filter_choice == "🔥 Show Only BUY Alerts":
-    filtered_tickers = [t for t in tickers if current_market_snapshot.get(t, {}).get("status") == "BUY"]
+    filtered_tickers = [t for t in tickers if st.session_state.live_prices.get(t, {}).get("status") == "BUY"]
 elif filter_choice == "⚠️ Show Only EXIT Alerts":
-    filtered_tickers = [t for t in tickers if current_market_snapshot.get(t, {}).get("status") == "EXIT"]
+    filtered_tickers = [t for t in tickers if st.session_state.live_prices.get(t, {}).get("status") == "EXIT"]
 
 # Grid Interface Layout
 if not filtered_tickers:
@@ -191,6 +190,10 @@ else:
                     symbol = "$" if "USD" in ticker else "₹"
                     clean_name = ticker.replace(".NS", "")
                     
+                    # Backup fallback if scanner hasn't hit this ticker yet in current execution
+                    if ticker not in st.session_state.live_prices:
+                        st.session_state.live_prices[ticker] = {"price": latest_price, "change": 0.0, "status": "STABLE"}
+                    
                     with st.container(border=True):
                         st.markdown(f"<div class='stock-title'>{clean_name}</div>", unsafe_allow_html=True)
                         st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
@@ -201,7 +204,7 @@ else:
                                 st.session_state.selected_ticker = clean_name
                                 st.session_state.ticker_raw_name = ticker
                                 with st.spinner("AI analyzing..."):
-                                    st.session_state.ai_analysis_result = None # Clear previous
+                                    st.session_state.ai_analysis_result = None
                                     try:
                                         recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
                                         ema_now = float(data_df['EMA_20'].iloc[-1])
@@ -211,21 +214,21 @@ else:
                                     except Exception as e:
                                         st.session_state.ai_analysis_result = f"Failed to generate strategy: {str(e)}"
                         with btn_col2:
-                            # Direct execution callback strategy to prevent refresh data loss
                             if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
                                 st.session_state.portfolio[ticker] = {"buy_price": latest_price, "qty": 100}
                                 st.toast(f"Added 100 shares of {clean_name} to Practice Portfolio!", icon="💰")
+                                st.rerun()
                 except Exception as e:
                     st.error(f"Error handling {ticker}")
 
-# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK (Placed after button states to catch values instantly)
+# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK (Now safely tracks using persistent state)
 with st.sidebar:
     st.markdown("## 💰 Live Practice Portfolio")
     st.markdown("*(Fake Money Trading Simulation)*")
     st.markdown("---")
     if st.session_state.portfolio:
         for p_ticker, p_data in list(st.session_state.portfolio.items()):
-            live_p = current_market_snapshot.get(p_ticker, {}).get("price", p_data["buy_price"])
+            live_p = st.session_state.live_prices.get(p_ticker, {}).get("price", p_data["buy_price"])
             current_pnl = (live_p - p_data["buy_price"]) * p_data["qty"]
             color = "#10b981" if current_pnl >= 0 else "#ef4444"
             
