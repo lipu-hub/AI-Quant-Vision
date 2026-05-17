@@ -24,7 +24,7 @@ def send_telegram_notification(message):
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         
-        # ✨ THE ULTIMATE FIX: Clean up special characters that trigger parsing fails in Telegram Markdown
+        # Clean up special characters that trigger parsing fails in Telegram Markdown
         safe_message = (
             message.replace("_", " ")
                    .replace("[", "(")
@@ -93,52 +93,3 @@ title_color = "#475569"
 plotly_template = "plotly_white"
 
 st.markdown(f"""
-<style>
-.stApp {{ background-color: {bg_color} !important; color: {text_color} !important; }}
-h1, h2, h3, p, span, label {{ color: {text_color} !important; font-weight: 600; }}
-div[data-testid="stMarkdownContainer"] p {{ color: {text_color} !important; }}
-div[data-testid="stVComponentBlock"] > div[style*="border"] {{
-    border: 1px solid {border_color} !important;
-    border-radius: 12px !important;
-    background: {card_bg} !important;
-    padding: 20px !important;
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
-}}
-.price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.8rem !important; font-weight: bold; color: {price_color} !important; margin: 5px 0px; }}
-.stock-title {{ font-size: 1.2rem; font-weight: 600; color: {title_color} !important; }}
-</style>
-""", unsafe_allow_html=True)
-
-tickers = st.session_state.custom_tickers
-st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Budget Scanner with Phone Notification Engine")
-
-@st.cache_data(ttl=30)
-def fetch_trading_data(ticker_name):
-    try:
-        df = yf.download(ticker_name, period="1mo", interval="15m", auto_adjust=True, progress=False)
-        if not df.empty:
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.get_level_values(0)
-            df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
-            return df
-    except Exception as e:
-        pass
-    return None
-
-# 🚨 AUTO-SCANNER FRAGMENT
-@st.fragment(run_every=15)
-def live_alert_scanner():
-    st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
-    buy_list = []
-    exit_list = []
-    
-    for ticker in tickers:
-        df = yf.download(ticker, period="1d", interval="1m", auto_adjust=True, progress=False)
-        if not df.empty:
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.get_level_values(0)
-                
-            latest_time = df.index[-1]
-            current_time = pd.Timestamp.now(tz=latest_time.tz)
-            time_diff_minutes = (current_time - latest_time).total_seconds() / 60
