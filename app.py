@@ -142,8 +142,34 @@ st.write("---")
 detail_symbol = "$" if "-USD" in s_stock else "₹"
 
 st.metric("Current Market Price", f"{detail_symbol}{round(price_now, 2)}")
+# --- Real AI Generation ---
+st.subheader("🤖 Live AI Analyst Insights")
 
-# Simple Prediction
-std_dev = float(df_detail['Close'].pct_change().std())
-st.info(f"💡 AI Forecast: Expecting movement towards {detail_symbol}{round(price_now * (1 + std_dev), 2)}")
+# Apni Gemini API Key yahan dalein (Ya Streamlit secrets ka use karein)
+# Aap temporary test karne ke liye apni key yahan string me daal sakte hain
+GEMINI_API_KEY = st.sidebar.text_input("Enter Gemini API Key", type="password")
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+    
+    # AI ko pichle 5 din ka data dena analysis ke liye
+    recent_data = df_detail[['Open', 'High', 'Low', 'Close']].tail(5).to_string()
+    
+    prompt = f"""
+    You are an expert financial analyst. Analyze this recent data for {s_stock}:
+    {recent_data}
+    Current Price: {detail_symbol}{round(price_now, 2)}
+    
+    Provide a concise 2-sentence trading insight (Trend & Key Support/Resistance) for tomorrow. Keep it professional.
+    """
+    
+    try:
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
+        st.success(response.text)
+    except Exception as e:
+        st.error("AI Insights generate nahi ho paye. Key check karein.")
+else:
+    st.info("💡 Sidebar mein Gemini API Key daal kar premium AI predictions unlock karein!")
+
            
