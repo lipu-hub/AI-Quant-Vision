@@ -25,11 +25,10 @@ if "ticker_raw_name" not in st.session_state:
 
 # 🛠️ ADMIN PANEL: Dynamic Ticker List State Initialization
 if "custom_tickers" not in st.session_state:
-    # Default initial 20 stock bucket setup
     st.session_state.custom_tickers = [
-        "SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS",
-        "IDEA.NS", "YESBANK.NS", "JPPOWER.NS", "RVNL.NS", "TATAPOWER.NS",
-        "NHPC.NS", "SJVN.NS", "NBCC.NS", "HUDCO.NS", "IOC.NS",
+        "SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS", 
+        "IDEA.NS", "YESBANK.NS", "JPPOWER.NS", "RVNL.NS", "TATAPOWER.NS", 
+        "NHPC.NS", "SJVN.NS", "NBCC.NS", "HUDCO.NS", "IOC.NS", 
         "SAIL.NS", "GAIL.NS", "IFCI.NS", "BTC-USD", "ETH-USD"
     ]
 
@@ -43,19 +42,15 @@ with st.sidebar:
     st.markdown("## ⚙️ Core Admin Console")
     admin_pin = st.text_input("Enter Admin Master Pin:", type="password", help="Enter pin to unlock stock controller database flow.")
     
-    # Master Pin Protection Check (Simple safety lock e.g., '1234' or any string you want)
-    if admin_pin == "777": 
+    if admin_pin == "777":
         st.success("🔓 Admin Access Granted!")
-        
-        # Add New Stock Interface
         new_ticker = st.text_input("Add Ticker Name (e.g., RELIANCE.NS, DOGE-USD):").upper().strip()
         if st.button("➕ Inject Asset into Engine"):
             if new_ticker and new_ticker not in st.session_state.custom_tickers:
                 st.session_state.custom_tickers.append(new_ticker)
                 st.toast(f"Injected {new_ticker} successfully into the matrix grid flow!")
                 st.rerun()
-                
-        # Remove Existing Stock Interface
+        
         st.markdown("---")
         ticker_to_remove = st.selectbox("Select Asset to Liquidate/Remove:", ["None"] + st.session_state.custom_tickers)
         if ticker_to_remove != "None" and st.button("❌ Terminate Asset"):
@@ -66,7 +61,7 @@ with st.sidebar:
         st.error("🔒 Incorrect Pin Token. Engine access locked.")
     st.markdown("---")
 
-# 🎛️ DYNAMIC CSS INJECTION BASED ON USER SELECTION
+# 🎛️ DYNAMIC CSS INJECTION
 if ui_theme == "🟠 Deep Dark Orange":
     bg_color = "#0b0f19"
     text_color = "#e2e8f0"
@@ -104,26 +99,52 @@ st.markdown(f"""
         border-color: {hover_border} !important;
         box-shadow: 0 4px 20px rgba(249, 115, 22, 0.25) !important;
     }}
-    .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.8rem !important; font-weight: bold; color: {price_color} !important; margin: 5px 0px; }}
+    .price-text {{
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1.8rem !important;
+        font-weight: bold;
+        color: {price_color} !important;
+        margin: 5px 0px;
+    }}
     .stock-title {{ font-size: 1.2rem; font-weight: 600; color: {title_color} !important; }}
-    button[data-testid="stBaseButton-secondary"] {{ background-color: transparent !important; border: 1px solid {hover_border} !important; color: {text_color} !important; border-radius: 8px !important; }}
-    button[data-testid="stBaseButton-secondary"]:hover {{ background-color: {hover_border} !important; color: white !important; }}
+    button[data-testid="stBaseButton-secondary"] {{
+        background-color: transparent !important;
+        border: 1px solid {hover_border} !important;
+        color: {text_color} !important;
+        border-radius: 8px !important;
+    }}
+    button[data-testid="stBaseButton-secondary"]:hover {{
+        background-color: {hover_border} !important;
+        color: white !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
-# Use dynamic list controlled by admin session matrix
 tickers = st.session_state.custom_tickers
-
 st.title("🚀 MarketMind AI Trading Terminal")
 st.subheader("Live Budget Scanner with Real-Time Admin Asset Control")
 
+# 🧠 GOD MODE: Advanced Quant Indicators Engine
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
     try:
         df = yf.download(ticker_name, period="1mo", interval="15m", auto_adjust=True, progress=False)
         if not df.empty:
+            # 1. 20 EMA
             df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
-        return df
+            
+            # 2. RSI (14) Calculation
+            delta = df['Close'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+            rs = gain / (loss + 1e-10)
+            df['RSI'] = 100 - (100 / (1 + rs))
+            
+            # 3. Volume Surge (Institutional Volume Detection)
+            df['Vol_Avg'] = df['Volume'].rolling(window=5).mean()
+            df['Vol_Surge'] = df['Volume'] > (df['Vol_Avg'] * 1.5)
+            
+            return df
     except Exception as e:
         return None
 
@@ -135,14 +156,12 @@ def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
     buy_list = []
     exit_list = []
-    
     for ticker in tickers:
         df = yf.download(ticker, period="1d", interval="1m", auto_adjust=True, progress=False)
         if not df.empty:
             close_series = df['Close'].squeeze()
             current_price = float(close_series.iloc[-1])
             prev_price = float(close_series.iloc[-2]) if len(close_series) > 1 else current_price
-            
             clean_name = ticker.replace(".NS", "")
             price_change = ((current_price - prev_price) / prev_price) * 100
             
@@ -159,7 +178,6 @@ def live_alert_scanner():
                 
     if not buy_list and not exit_list:
         st.info("🔄 Scanning 1-minute order blocks... Penny assets are stable. No massive volatility alerts right now.")
-    
     return live_status
 
 current_market_snapshot = live_alert_scanner()
@@ -179,7 +197,6 @@ with st.sidebar:
             live_p = current_market_snapshot.get(p_ticker, {}).get("price", p_data["buy_price"])
             current_pnl = (live_p - p_data["buy_price"]) * p_data["qty"]
             color = "#10b981" if current_pnl >= 0 else "#ef4444"
-            
             with st.container(border=True):
                 st.markdown(f"### {p_ticker.replace('.NS','')}")
                 st.markdown(f"Qty: **{p_data['qty']}** | Avg: **{p_data['buy_price']:.2f}**")
@@ -192,23 +209,39 @@ with st.sidebar:
     else:
         st.info("No active simulator positions. Click 'Sim' on cards to trade.")
 
+# 🧠 GOD MODE: Advanced Gemini Prompt Engine
 def generate_quant_signals(ticker_name, df, current_price):
     try:
-        recent_data = df.tail(10)[['Close', 'High', 'Low']].to_string()
+        recent_data = df.tail(10)[['Close', 'High', 'Low', 'Volume']].to_string()
         ema_now = float(df['EMA_20'].iloc[-1])
-        prompt = f"""
-        You are an elite quantitative trading hedge-fund manager. Analyze this budget asset for Short-term/Daily Trading: {ticker_name}.
-        Current Market Price: {current_price}
-        20-Day EMA Value: {ema_now:.2f}
-        Recent 10-day market movement:
+        rsi_now = float(df['RSI'].iloc[-1]) if 'RSI' in df else 50.0
+        vol_surge_now = "YES (Institutional Spiking Detected)" if df['Vol_Surge'].iloc[-1] else "NO (Retail standard)"
+        
+        god_mode_prompt = f"""
+        You are operating in GOD MODE as an elite Wall Street institutional quantitative hedge-fund manager.
+        Analyze this asset for high-precision Short-term/Daily Manual Trading: {ticker_name}.
+        
+        [QUANT MARKET DATA VARIABLES]
+        - Current Market Price: {current_price}
+        - 20-Day EMA Trend Value: {ema_now:.2f}
+        - Relative Strength Index (RSI 14): {rsi_now:.2f}
+        - Heavy Volume Surge Status: {vol_surge_now}
+        - Recent 10-period OHLCV Raw Matrix:
         {recent_data}
-        Provide a strategic trading action block in clean markdown formatting:
-        1. 🚦 **TRADING SIGNAL**: Clear (STRONG BUY / BUY / HOLD / SELL).
-        2. 🎯 **MATHEMATICAL TARGETS**: Provide an entry zone, Target 1, Target 2, and a strict Stop-Loss (SL) level.
-        3. 🔍 **QUANTS RATIONALE**: Focus on retail traders setup. Why this trade makes sense. Do not include financial advice disclaimers.
+        
+        [CRITICAL ALGORITHMIC MATRIX RULES]
+        1. 🚦 TRADING SIGNAL: Output strictly (STRONG BUY / BUY / HOLD / SELL / STRONG SELL). 
+           - Strictly DO NOT give a BUY if RSI > 70 (Overbought Risk).
+           - Strictly DO NOT give a SELL if RSI < 30 (Oversold Bounce Risk).
+        2. ⚡ CONFIDENCE SCORE: Output a mathematical confluence rating from 0% to 100% (e.g., 🧭 Confidence Rating: 92%). If RSI, EMA, and Volume support the same side, score must be > 90%.
+        3. 🎯 MATHEMATICAL TARGETS: Provide a hyper-precise Entry Zone, Target 1, Target 2, and a strict Stop-Loss (SL) level.
+        4. 🔍 QUANTS RATIONALE: Break down the structural alignment of the 20 EMA, RSI momentum levels, and volume surge. Do not provide generic standard advice or financial disclaimers. Make it a sharp breakdown so the user can punch manual trades confidently.
+        
+        Format the output using highly polished Markdown with clean bold structure and professional financial tone.
         """
+        # Using the advanced flash model from your repository structure
         model = genai.GenerativeModel('models/gemini-2.5-flash')
-        response = model.generate_content(prompt)
+        response = model.generate_content(god_mode_prompt)
         return response.text
     except Exception as e:
         return f"Signal Generation Failed: {str(e)}"
@@ -234,11 +267,9 @@ else:
                     latest_price = float(close_series.iloc[-1])
                     symbol = "$" if "USD" in ticker else "₹"
                     clean_name = ticker.replace(".NS", "")
-                    
                     with st.container(border=True):
                         st.markdown(f"<div class='stock-title'>{clean_name}</div>", unsafe_allow_html=True)
                         st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
-                        
                         btn_col1, btn_col2 = st.columns(2)
                         with btn_col1:
                             if st.button(f"Scan 🎯", key=f"scan_{ticker}", use_container_width=True):
@@ -265,22 +296,29 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
         if raw_df is not None and not raw_df.empty:
             fig = go.Figure()
             fig.add_trace(go.Candlestick(
-                x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(),
-                low=raw_df['Low'].squeeze(), close=raw_df['Close'].squeeze(), name='Price Action'
+                x=raw_df.index, 
+                open=raw_df['Open'].squeeze(), 
+                high=raw_df['High'].squeeze(), 
+                low=raw_df['Low'].squeeze(), 
+                close=raw_df['Close'].squeeze(), 
+                name='Price Action'
             ))
             fig.add_trace(go.Scatter(
-                x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f97316', width=2), name='20 EMA Trend'
+                x=raw_df.index, 
+                y=raw_df['EMA_20'].squeeze(), 
+                line=dict(color='#f97316', width=2), 
+                name='20 EMA Trend'
             ))
             fig.update_layout(
                 xaxis_rangeslider_visible=False, 
                 height=420, 
-                template=plotly_template,
-                paper_bgcolor='rgba(0,0,0,0)',
+                template=plotly_template, 
+                paper_bgcolor='rgba(0,0,0,0)', 
                 plot_bgcolor='rgba(0,0,0,0)'
             )
             st.plotly_chart(fig, use_container_width=True)
             
     with signal_col:
         with st.container(border=True):
-            st.markdown("### 🤖 Executable AI Strategy")
+            st.markdown("### 🤖 Executable AI Strategy (GOD MODE)")
             st.markdown(st.session_state.ai_analysis_result)
