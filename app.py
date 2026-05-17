@@ -13,6 +13,16 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
 
+# Initialize Session States globally before any rendering
+if "portfolio" not in st.session_state: 
+    st.session_state.portfolio = {}
+if "selected_ticker" not in st.session_state: 
+    st.session_state.selected_ticker = None
+if "ai_analysis_result" not in st.session_state: 
+    st.session_state.ai_analysis_result = None
+if "ticker_raw_name" not in st.session_state: 
+    st.session_state.ticker_raw_name = None
+
 # 🌓 MULTI-PAGE NAVIGATION & THEME CONTROL
 with st.sidebar:
     st.markdown("## 🧭 Navigation Desk")
@@ -74,35 +84,42 @@ tickers = [
     "SAIL.NS", "GAIL.NS", "IFCI.NS", "BTC-USD", "ETH-USD"
 ]
 
-# Initialize Session States
-if "portfolio" not in st.session_state: st.session_state.portfolio = {}
-if "selected_ticker" not in st.session_state: st.session_state.selected_ticker = None
-if "ai_analysis_result" not in st.session_state: st.session_state.ai_analysis_result = None
-if "ticker_raw_name" not in st.session_state: st.session_state.ticker_raw_name = None
-
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
     try:
         df = yf.download(ticker_name, period="1mo", interval="15m", auto_adjust=True, progress=False)
-        if not df.empty: df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
+        if not df.empty: 
+            df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
         return df
-    except: return None
+    except: 
+        return None
 
 def generate_quant_signals(ticker_name, df, current_price):
     try:
         recent_data = df.tail(10)[['Close', 'High', 'Low']].to_string()
         ema_now = float(df['EMA_20'].iloc[-1])
-        prompt = f"Analyze this budget asset for Short-term Trading: {ticker_name}. Price: {current_price}, EMA_20: {ema_now:.2f}. Data: {recent_data}. Provide Clear Signal (STRONG BUY/BUY/HOLD/SELL), targets, entry zone, and strict stop loss."
+        prompt = f"""
+        You are an elite quantitative trading hedge-fund manager. Analyze this budget asset for Short-term/Daily Trading: {ticker_name}.
+        Current Market Price: {current_price}
+        20-Day EMA Value: {ema_now:.2f}
+        Recent 10-day market movement:
+        {recent_data}
+        Provide a strategic trading action block in clean markdown formatting:
+        1. 🚦 **TRADING SIGNAL**: Clear (STRONG BUY / BUY / HOLD / SELL).
+        2. 🎯 **MATHEMATICAL TARGETS**: Provide an entry zone, Target 1, Target 2, and a strict Stop-Loss (SL) level.
+        3. 🔍 **QUANTS RATIONALE**: Focus on retail traders setup. Why this trade makes sense. Do not include financial advice disclaimers.
+        """
         model = genai.GenerativeModel('models/gemini-2.5-flash')
         return model.generate_content(prompt).text
-    except Exception as e: return f"Failed: {str(e)}"
+    except Exception as e: 
+        return f"Failed: {str(e)}"
 
 # ---------------- NAVIGATION LOGIC ----------------
 if app_page == "🏠 Terminal Dashboard":
     st.title("🚀 MarketMind AI Trading Terminal")
     st.subheader("Live 20-Asset Budget Matrix Desk")
     
-    # Render Sidebar Simulator positions
+    # Live Sidebar Portfolio Tracking
     with st.sidebar:
         st.markdown("## 💰 Simulator Positions")
         if st.session_state.portfolio:
@@ -112,16 +129,19 @@ if app_page == "🏠 Terminal Dashboard":
                     st.markdown(f"Qty: **{p_data['qty']}** | Avg: **{p_data['buy_price']:.2f}**")
                     if st.button("Square Off ❌", key=f"sell_{p_ticker}"):
                         del st.session_state.portfolio[p_ticker]
-                        st.rerun()
-        else: st.info("No active virtual trades.")
+                        st.toast(f"Position closed for {p_ticker.replace('.NS','')}")
+                        st.switch_page("app.py") # Safe state reset trigger
+        else: 
+            st.info("No active virtual trades.")
 
-    # Grid Display
+    # Grid Display Matrix
     cols = st.columns(4)
     for i, ticker in enumerate(tickers):
         with cols[i % 4]:
             data_df = fetch_trading_data(ticker)
             if data_df is not None and not data_df.empty:
-                latest_price = float(data_df['Close'].squeeze().iloc[-1])
+                close_series = data_df['Close'].squeeze()
+                latest_price = float(close_series.iloc[-1])
                 symbol = "$" if "USD" in ticker else "₹"
                 clean_name = ticker.replace(".NS", "")
                 
@@ -134,12 +154,13 @@ if app_page == "🏠 Terminal Dashboard":
                         if st.button("Scan 🎯", key=f"s_{ticker}", use_container_width=True):
                             st.session_state.selected_ticker = clean_name
                             st.session_state.ticker_raw_name = ticker
-                            with st.spinner("AI analyzing..."):
-                                st.session_state.ai_analysis_result = generate_quant_signals(ticker, data_df, latest_price)
+                            # Local quick compute instead of waiting full state loop
+                            st.session_state.ai_analysis_result = generate_quant_signals(ticker, data_df, latest_price)
                     with b_col2:
                         if st.button("Sim 🛍️", key=f"p_{ticker}", use_container_width=True):
                             st.session_state.portfolio[ticker] = {"buy_price": latest_price, "qty": 100}
-                            st.rerun()
+                            st.toast(f"Bought 100 shares of {clean_name}!")
+                            st.switch_page("app.py")
 
     # Dynamic Analysis Output Block Below Grid Matrix
     if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
@@ -150,12 +171,21 @@ if app_page == "🏠 Terminal Dashboard":
             raw_df = fetch_trading_data(st.session_state.ticker_raw_name)
             if raw_df is not None and not raw_df.empty:
                 fig = go.Figure()
-                fig.add_trace(go.Candlestick(x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(), low=raw_df['Low'].squeeze(), close=raw_df['Close'].squeeze()))
-                fig.add_trace(go.Scatter(x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f97316', width=2)))
+                fig.add_trace(go.Candlestick(
+                    x=raw_df.index, 
+                    open=raw_df['Open'].squeeze(), 
+                    high=raw_df['High'].squeeze(), 
+                    low=raw_df['Low'].squeeze(), 
+                    close=raw_df['Close'].squeeze(),
+                    name='Price Action'
+                ))
+                fig.add_trace(go.Scatter(x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f97316', width=2), name='20 EMA'))
                 fig.update_layout(xaxis_rangeslider_visible=False, height=400, template=plotly_template, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig, use_container_width=True)
         with s_col:
-            with st.container(border=True): st.markdown(st.session_state.ai_analysis_result)
+            with st.container(border=True): 
+                st.markdown("### 🤖 Executable AI Strategy")
+                st.markdown(st.session_state.ai_analysis_result)
 
 elif app_page == "🔍 Live AI Scanner":
     st.title("🔍 Real-Time Intelligent Whistleblower Engine")
