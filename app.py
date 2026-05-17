@@ -13,7 +13,7 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
 
-# INITIALIZE SESSION STATES FIRST (To fix data loss bug)
+# Initialize Session States
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = {}
 if "selected_ticker" not in st.session_state:
@@ -31,13 +31,8 @@ if "custom_tickers" not in st.session_state:
         "SAIL.NS", "GAIL.NS", "IFCI.NS", "BTC-USD", "ETH-USD"
     ]
 
-# 🌓 THEME CONTROL & ADMIN WORKBENCH IN SIDEBAR
+# ⚙️ CORE ADMIN CONSOLE IN SIDEBAR
 with st.sidebar:
-    st.markdown("## 🎨 Terminal Customization")
-    ui_theme = st.selectbox("Select Display Theme:", ["🟠 Deep Dark Orange", "⚪ Classic Light Orange"])
-    st.markdown("---")
-    
-    # ⚙️ CORE ADMIN CONSOLE
     st.markdown("## ⚙️ Core Admin Console")
     admin_pin = st.text_input("Enter Admin Master Pin:", type="password")
     
@@ -57,48 +52,68 @@ with st.sidebar:
         st.error("🔒 Incorrect Pin.")
     st.markdown("---")
 
-# 🎛️ DYNAMIC CSS INJECTION
-if ui_theme == "🟠 Deep Dark Orange":
-    bg_color = "#0b0f19"
-    text_color = "#e2e8f0"
-    card_bg = "linear-gradient(145deg, #111827, #0f172a)"
-    border_color = "rgba(249, 115, 22, 0.3)"
-    hover_border = "#f97316"
-    price_color = "#f97316"
-    title_color = "#94a3b8"
-    plotly_template = "plotly_dark"
-else:
-    bg_color = "#f8fafc"
-    text_color = "#0f172a"
-    card_bg = "#ffffff"
-    border_color = "rgba(234, 88, 12, 0.4)"
-    hover_border = "#ea580c"
-    price_color = "#ea580c"
-    title_color = "#475569"
-    plotly_template = "plotly_white"
+# 🎛️ INJECTING CLEAN WHITE LIGHT THEME STYLE BLOCK
+bg_color = "#f8fafc"
+text_color = "#0f172a"
+card_bg = "#ffffff"
+border_color = "rgba(234, 88, 12, 0.4)"
+hover_border = "#ea580c"
+price_color = "#ea580c" # Rich Orange for high contrast readability
+title_color = "#475569"
+plotly_template = "plotly_white"
 
 st.markdown(f"""
 <style>
-    .stApp {{ background-color: {bg_color} !important; color: {text_color} !important; }}
-    h1, h2, h3, p, span, label {{ color: {text_color} !important; font-weight: 600; }}
-    div[data-testid="stMarkdownContainer"] p {{ color: {text_color} !important; }}
+    /* Global Background and Text Adjustment for Clean Light View */
+    .stApp {{
+        background-color: {bg_color} !important;
+        color: {text_color} !important;
+    }}
+    h1, h2, h3, p, span, label {{
+        color: {text_color} !important;
+        font-weight: 600;
+    }}
+    div[data-testid="stMarkdownContainer"] p {{
+        color: {text_color} !important;
+    }}
+    /* Clean Card Layout with Subtle Orange Border Shadows */
     div[data-testid="stVComponentBlock"] > div[style*="border"] {{
         border: 1px solid {border_color} !important;
         border-radius: 12px !important;
         background: {card_bg} !important;
         padding: 20px !important;
-        box-shadow: 0 4px 15px rgba(249, 115, 22, 0.05) !important;
-        transition: transform 0.2s ease, border-color 0.2s ease;
+        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }}
     div[data-testid="stVComponentBlock"] > div[style*="border"]:hover {{
         transform: translateY(-2px);
         border-color: {hover_border} !important;
-        box-shadow: 0 4px 20px rgba(249, 115, 22, 0.25) !important;
+        box-shadow: 0 4px 18px rgba(234, 88, 12, 0.15) !important;
     }}
-    .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.8rem !important; font-weight: bold; color: {price_color} !important; margin: 5px 0px; }}
-    .stock-title {{ font-size: 1.2rem; font-weight: 600; color: {title_color} !important; }}
-    button[data-testid="stBaseButton-secondary"] {{ background-color: transparent !important; border: 1px solid {hover_border} !important; color: {text_color} !important; border-radius: 8px !important; }}
-    button[data-testid="stBaseButton-secondary"]:hover {{ background-color: {hover_border} !important; color: white !important; }}
+    /* Precise Orange Typography */
+    .price-text {{
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1.8rem !important;
+        font-weight: bold;
+        color: {price_color} !important;
+        margin: 5px 0px;
+    }}
+    .stock-title {{
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: {title_color} !important;
+    }}
+    /* Light Mode Adaptive Interactive Buttons */
+    button[data-testid="stBaseButton-secondary"] {{
+        background-color: #ffffff !important;
+        border: 1px solid {hover_border} !important;
+        color: {hover_border} !important;
+        border-radius: 8px !important;
+    }}
+    button[data-testid="stBaseButton-secondary"]:hover {{
+        background-color: {hover_border} !important;
+        color: white !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -158,7 +173,7 @@ st.markdown("---")
 st.markdown("### 🔍 Intelligent Asset Filter")
 filter_choice = st.radio("Filter Dashboard Assets By:", ["Show All Active Assets", "🔥 Show Only BUY Alerts", "⚠️ Show Only EXIT Alerts"], horizontal=True)
 
-# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK (Working perfectly now)
+# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK
 with st.sidebar:
     st.markdown("## 💰 Live Practice Portfolio")
     st.markdown("*(Fake Money Trading Simulation)*")
@@ -225,7 +240,6 @@ else:
                                     st.session_state.ai_analysis_result = generate_quant_signals(ticker, data_df, latest_price)
                         with btn_col2:
                             if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
-                                # Saved safely into persistent state mapping
                                 st.session_state.portfolio[ticker] = {"buy_price": latest_price, "qty": 100}
                                 st.rerun()
                 except Exception as e:
