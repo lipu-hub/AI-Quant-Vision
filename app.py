@@ -130,7 +130,7 @@ def fetch_trading_data(ticker_name):
     except:
         return None
 
-# 🚨 AUTO-SCANNER FRAGMENT WITH PERSISTENT PRICE LOCK
+# 🚨 AUTO-SCANNER FRAGMENT WITH LIVE MARKET FRESHNESS CHECK
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
@@ -140,26 +140,33 @@ def live_alert_scanner():
     for ticker in tickers:
         df = yf.download(ticker, period="1d", interval="1m", auto_adjust=True, progress=False)
         if not df.empty:
+            # 🕒 Calculate time difference to stop alerts when market is closed
+            latest_time = df.index[-1]
+            current_time = pd.Timestamp.now(tz=latest_time.tz)
+            time_diff_minutes = (current_time - latest_time).total_seconds() / 60
+            
             close_series = df['Close'].squeeze()
             current_price = float(close_series.iloc[-1])
             prev_price = float(close_series.iloc[-2]) if len(close_series) > 1 else current_price
             price_change = ((current_price - prev_price) / prev_price) * 100
             clean_name = ticker.replace(".NS", "")
             
-            # Save permanently inside session state memory to avoid dataloss
+            # Save to persistent state
             st.session_state.live_prices[ticker] = {"price": current_price, "change": price_change, "status": "STABLE"}
             
-            if price_change > 0.12:
-                st.success(f"🔥 **IMMEDIATE BUY ALERT:** {clean_name} is spiking up! Price: {current_price:.2f} (+{price_change:.2f}%)")
-                st.session_state.live_prices[ticker]["status"] = "BUY"
-                buy_list.append(ticker)
-            elif price_change < -0.12:
-                st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} is dropping fast! Dump/Exit now! Price: {current_price:.2f} ({price_change:.2f}%)")
-                st.session_state.live_prices[ticker]["status"] = "EXIT"
-                exit_list.append(ticker)
+            # Alerts generate only if the data stream is fresh (less than 15 mins old)
+            if time_diff_minutes < 15:
+                if price_change > 0.12:
+                    st.success(f"🔥 **IMMEDIATE BUY ALERT:** {clean_name} is spiking up! Price: {current_price:.2f} (+{price_change:.2f}%)")
+                    st.session_state.live_prices[ticker]["status"] = "BUY"
+                    buy_list.append(ticker)
+                elif price_change < -0.12:
+                    st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} is dropping fast! Dump/Exit now! Price: {current_price:.2f} ({price_change:.2f}%)")
+                    st.session_state.live_prices[ticker]["status"] = "EXIT"
+                    exit_list.append(ticker)
                 
     if not buy_list and not exit_list:
-        st.info("🔄 Scanning 1-minute order blocks... Penny assets are stable. No massive volatility alerts right now.")
+        st.info("🔄 Scanner is waiting for Live Market or Data Stream is Paused (Market Closed).")
 
 live_alert_scanner()
 st.markdown("---")
@@ -190,7 +197,6 @@ else:
                     symbol = "$" if "USD" in ticker else "₹"
                     clean_name = ticker.replace(".NS", "")
                     
-                    # Backup fallback if scanner hasn't hit this ticker yet in current execution
                     if ticker not in st.session_state.live_prices:
                         st.session_state.live_prices[ticker] = {"price": latest_price, "change": 0.0, "status": "STABLE"}
                     
@@ -221,7 +227,7 @@ else:
                 except Exception as e:
                     st.error(f"Error handling {ticker}")
 
-# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK (Now safely tracks using persistent state)
+# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK (Now locked with state caching)
 with st.sidebar:
     st.markdown("## 💰 Live Practice Portfolio")
     st.markdown("*(Fake Money Trading Simulation)*")
