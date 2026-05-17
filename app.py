@@ -1,4 +1,10 @@
 import streamlit as st
+import streamlit as st
+import yfinance as yf
+import plotly.graph_objects as go
+import pandas as pd
+from streamlit_autorefresh import st_autorefresh
+import google.generativeai as genai  # <-- Yeh naye line add karein
 import yfinance as yf
 import plotly.graph_objects as go
 import pandas as pd
