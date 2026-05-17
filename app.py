@@ -72,30 +72,29 @@ div[data-testid="stVComponentBlock"] > div[style*="border"] {{
 </style>
 """, unsafe_allow_html=True)
 
-# ✨ SOLID FIXED: Direct verified high-res image links for all brands
+# ✨ EXPERT FIX: Direct Raw Vector GitHub links that never get blocked by CORS
 def get_stock_logo_url(ticker):
     logos = {
-        "SUZLON": "https://images.crunchbase.com/image/upload/c_pad,h_170,w_170,f_auto,b_white,q_auto:eco/v1397181041/v9p4b7vbxv0p8mggp4zm.png",
-        "RVNL": "https://www.rvnl.org/images/logo.png",
-        "NBCC": "https://companieslogo.com/img/orig/NBCC.NS-b9fc1529.png",
-        "GAIL": "https://companieslogo.com/img/orig/GAIL.NS-6bd1098b.png",
-        "IRFC": "https://irfc.co.in/wp-content/uploads/2019/12/logo.png",
-        "IDEA": "https://companieslogo.com/img/orig/IDEA.NS-875f6e8d.png",
-        "TATAPOWER": "https://companieslogo.com/img/orig/TATAPOWER.NS-6a84f3ec.png",
-        "HUDCO": "https://hudco.org/writereaddata/images/logo.png",
-        "IFCI": "https://www.ifciltd.com/wp-content/themes/ifci/images/logo.png",
-        "YESBANK": "https://companieslogo.com/img/orig/YESBANK.NS-995b058c.png",
-        "NHPC": "https://companieslogo.com/img/orig/NHPC.NS-7e2da67b.png",
-        "IOC": "https://companieslogo.com/img/orig/IOC.NS-be2f9864.png",
-        "PNB": "https://companieslogo.com/img/orig/PNB.NS-653c3e8e.png",
-        "JPPOWER": "https://companieslogo.com/img/orig/JPPOWER.NS-e5b12da6.png",
-        "SJVN": "https://companieslogo.com/img/orig/SJVN.NS-9642c759.png",
-        "SAIL": "https://companieslogo.com/img/orig/SAIL.NS-677a28e7.png",
-        "BTC-USD": "https://companieslogo.com/img/orig/BTC-USD-C_BIG-b062ec7b.png",
-        "ETH-USD": "https://companieslogo.com/img/orig/ETH-USD-C_BIG-a9477bca.png"
+        "SUZLON": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/SUZLON.png",
+        "RVNL": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/RVNL.png",
+        "NBCC": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/NBCC.png",
+        "GAIL": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/GAIL.png",
+        "IRFC": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/IRFC.png",
+        "IDEA": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/VI.png",
+        "TATAPOWER": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/TATAPOWER.png",
+        "HUDCO": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/HUDCO.png",
+        "IFCI": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/IFCI.png",
+        "YESBANK": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/YESBANK.png",
+        "NHPC": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/NHPC.png",
+        "IOC": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/IOC.png",
+        "PNB": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/PNB.png",
+        "JPPOWER": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/JPPOWER.png",
+        "SJVN": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/SJVN.png",
+        "SAIL": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/SAIL.png",
+        "BTC-USD": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png",
+        "ETH-USD": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png"
     }
-    # Generic backup stock icon if a new stock is added via console
-    return logos.get(ticker, "https://companieslogo.com/img/orig/MARKET-9d1ef546.png")
+    return logos.get(ticker, "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/GENERIC.png")
 
 tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
@@ -140,7 +139,6 @@ for i, ticker in enumerate(tickers):
             img_url = get_stock_logo_url(clean_name)
             
             with st.container(border=True):
-                # Clean Layout rendering true company graphics logos
                 st.markdown(f"""
                 <div class="card-header-flex">
                     <img class="company-logo-img" src="{img_url}">
