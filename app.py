@@ -4,53 +4,49 @@ import pandas as pd
 
 st.set_page_config(layout="wide")
 
-# 1. Ticker list jisme LIC (LICI.NS) ko add kar diya hai
+# 1. Tickers List (LIC Included)
 tickers = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "LICI.NS", "BTC-USD", "ETH-USD"]
 
 st.title("🚀 MarketMind AI Terminal")
 st.subheader("Market Overview")
 
-# 2. Data fetching function with caching
+# 2. Single Ticker Fetching Function (No MultiIndex mix-up)
 @st.cache_data(ttl=60)
-def fetch_market_data(ticker_list):
-    # auto_adjust=True se exact adjusted close price milta hai
-    df = yf.download(ticker_list, period="5d", interval="1d", auto_adjust=True)
-    return df
+def fetch_single_ticker(ticker_name):
+    try:
+        # 1mo data le rahe hain taaki AI aur Forecasting ke liye perfect trend mile
+        df = yf.download(ticker_name, period="1mo", interval="1d", auto_adjust=True, progress=False)
+        return df
+    except Exception as e:
+        return None
 
-try:
-    data_df = fetch_market_data(tickers)
-    
-    # 3. Responsive Grid Layout (4 Columns)
-    cols = st.columns(4)
-    
-    for i, ticker in enumerate(tickers):
-        with cols[i % 4]:
+# 3. Responsive Grid Layout (4 Columns)
+cols = st.columns(4)
+
+for i, ticker in enumerate(tickers):
+    with cols[i % 4]:
+        data_df = fetch_single_ticker(ticker)
+        
+        if data_df is not None and not data_df.empty:
             try:
-                # MultiIndex DataFrame se safely specific ticker ka close price nikalna
-                if isinstance(data_df['Close'], pd.DataFrame):
-                    ticker_data = data_df['Close'][ticker].dropna()
-                else:
-                    ticker_data = data_df['Close'].dropna()
+                # Direct safe extraction
+                latest_price = float(data_df['Close'].iloc[-1])
                 
-                # Latest close price extraction
-                latest_price = float(ticker_data.iloc[-1])
-                
-                # Currency check (INR for Indian stocks, USD for Crypto)
+                # Currency check
                 symbol = "$" if "USD" in ticker else "₹"
                 clean_name = ticker.replace(".NS", "")
                 
-                # Beautiful Bordered UI Card
+                # UI Card Design
                 with st.container(border=True):
                     st.markdown(f"### {clean_name}")
                     st.markdown(f"# {symbol}{latest_price:,.2f}")
                     
-                    # Interactivity Button for Gemini AI
+                    # Gemini AI Trigger Button
                     if st.button(f"Analyze {clean_name}", key=ticker):
                         st.session_state.selected_ticker = ticker
                         st.success(f"Analyzing {clean_name} with Gemini AI...")
                         
             except Exception as e:
-                st.error(f"Error parsing {ticker}")
-
-except Exception as e:
-    st.error(f"Data fetch fail ho gaya: {e}")
+                st.error(f"Error parsing price for {ticker}")
+        else:
+            st.error(f"Data not available for {ticker}")
