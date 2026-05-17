@@ -13,7 +13,7 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
 
-# Initialize Session States
+# INITIALIZE SESSION STATES FIRST (To prevent data loss on refresh)
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = {}
 if "selected_ticker" not in st.session_state:
@@ -58,13 +58,12 @@ text_color = "#0f172a"
 card_bg = "#ffffff"
 border_color = "rgba(234, 88, 12, 0.4)"
 hover_border = "#ea580c"
-price_color = "#ea580c" # Rich Orange for high contrast readability
+price_color = "#ea580c" 
 title_color = "#475569"
 plotly_template = "plotly_white"
 
 st.markdown(f"""
 <style>
-    /* Global Background and Text Adjustment for Clean Light View */
     .stApp {{
         background-color: {bg_color} !important;
         color: {text_color} !important;
@@ -76,7 +75,6 @@ st.markdown(f"""
     div[data-testid="stMarkdownContainer"] p {{
         color: {text_color} !important;
     }}
-    /* Clean Card Layout with Subtle Orange Border Shadows */
     div[data-testid="stVComponentBlock"] > div[style*="border"] {{
         border: 1px solid {border_color} !important;
         border-radius: 12px !important;
@@ -90,7 +88,6 @@ st.markdown(f"""
         border-color: {hover_border} !important;
         box-shadow: 0 4px 18px rgba(234, 88, 12, 0.15) !important;
     }}
-    /* Precise Orange Typography */
     .price-text {{
         font-family: 'Courier New', Courier, monospace;
         font-size: 1.8rem !important;
@@ -103,7 +100,6 @@ st.markdown(f"""
         font-weight: 600;
         color: {title_color} !important;
     }}
-    /* Light Mode Adaptive Interactive Buttons */
     button[data-testid="stBaseButton-secondary"] {{
         background-color: #ffffff !important;
         border: 1px solid {hover_border} !important;
@@ -173,38 +169,6 @@ st.markdown("---")
 st.markdown("### 🔍 Intelligent Asset Filter")
 filter_choice = st.radio("Filter Dashboard Assets By:", ["Show All Active Assets", "🔥 Show Only BUY Alerts", "⚠️ Show Only EXIT Alerts"], horizontal=True)
 
-# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK
-with st.sidebar:
-    st.markdown("## 💰 Live Practice Portfolio")
-    st.markdown("*(Fake Money Trading Simulation)*")
-    st.markdown("---")
-    if st.session_state.portfolio:
-        for p_ticker, p_data in list(st.session_state.portfolio.items()):
-            live_p = current_market_snapshot.get(p_ticker, {}).get("price", p_data["buy_price"])
-            current_pnl = (live_p - p_data["buy_price"]) * p_data["qty"]
-            color = "#10b981" if current_pnl >= 0 else "#ef4444"
-            
-            with st.container(border=True):
-                st.markdown(f"### {p_ticker.replace('.NS','')}")
-                st.markdown(f"Qty: **{p_data['qty']}** | Avg: **{p_data['buy_price']:.2f}**")
-                st.markdown(f"Current: **{live_p:.2f}**")
-                st.markdown(f"P&L: <span style='color:{color}; font-weight:bold; font-size:1.2rem;'>₹{current_pnl:.2f}</span>", unsafe_allow_html=True)
-                if st.button(f"Square Off ❌", key=f"sell_{p_ticker}"):
-                    del st.session_state.portfolio[p_ticker]
-                    st.rerun()
-    else:
-        st.info("No active simulator positions. Click 'Sim Buy 🛍️' on cards to trade.")
-
-def generate_quant_signals(ticker_name, df, current_price):
-    try:
-        recent_data = df.tail(10)[['Close', 'High', 'Low']].to_string()
-        ema_now = float(df['EMA_20'].iloc[-1])
-        prompt = f"Analyze this asset for short term trading: {ticker_name}. Current Price: {current_price}, EMA_20: {ema_now:.2f}. Data: {recent_data}. Provide clear buy/sell signal and entry zones."
-        model = genai.GenerativeModel('models/gemini-2.5-flash')
-        return model.generate_content(prompt).text
-    except Exception as e:
-        return f"Signal Generation Failed: {str(e)}"
-
 # Filter tickers logic
 filtered_tickers = tickers
 if filter_choice == "🔥 Show Only BUY Alerts":
@@ -237,13 +201,44 @@ else:
                                 st.session_state.selected_ticker = clean_name
                                 st.session_state.ticker_raw_name = ticker
                                 with st.spinner("AI analyzing..."):
-                                    st.session_state.ai_analysis_result = generate_quant_signals(ticker, data_df, latest_price)
+                                    st.session_state.ai_analysis_result = None # Clear previous
+                                    try:
+                                        recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
+                                        ema_now = float(data_df['EMA_20'].iloc[-1])
+                                        prompt = f"Analyze this asset for short term trading: {clean_name}. Current Price: {latest_price}, EMA_20: {ema_now:.2f}. Data: {recent_data}. Provide clear buy/sell signal and entry zones."
+                                        model = genai.GenerativeModel('models/gemini-2.5-flash')
+                                        st.session_state.ai_analysis_result = model.generate_content(prompt).text
+                                    except Exception as e:
+                                        st.session_state.ai_analysis_result = f"Failed to generate strategy: {str(e)}"
                         with btn_col2:
+                            # Direct execution callback strategy to prevent refresh data loss
                             if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
                                 st.session_state.portfolio[ticker] = {"buy_price": latest_price, "qty": 100}
-                                st.rerun()
+                                st.toast(f"Added 100 shares of {clean_name} to Practice Portfolio!", icon="💰")
                 except Exception as e:
                     st.error(f"Error handling {ticker}")
+
+# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK (Placed after button states to catch values instantly)
+with st.sidebar:
+    st.markdown("## 💰 Live Practice Portfolio")
+    st.markdown("*(Fake Money Trading Simulation)*")
+    st.markdown("---")
+    if st.session_state.portfolio:
+        for p_ticker, p_data in list(st.session_state.portfolio.items()):
+            live_p = current_market_snapshot.get(p_ticker, {}).get("price", p_data["buy_price"])
+            current_pnl = (live_p - p_data["buy_price"]) * p_data["qty"]
+            color = "#10b981" if current_pnl >= 0 else "#ef4444"
+            
+            with st.container(border=True):
+                st.markdown(f"### {p_ticker.replace('.NS','')}")
+                st.markdown(f"Qty: **{p_data['qty']}** | Avg: **{p_data['buy_price']:.2f}**")
+                st.markdown(f"Current: **{live_p:.2f}**")
+                st.markdown(f"P&L: <span style='color:{color}; font-weight:bold; font-size:1.2rem;'>₹{current_pnl:.2f}</span>", unsafe_allow_html=True)
+                if st.button(f"Square Off ❌", key=f"sell_{p_ticker}"):
+                    del st.session_state.portfolio[p_ticker]
+                    st.rerun()
+    else:
+        st.info("No active simulator positions. Click 'Sim Buy 🛍️' on cards to trade.")
 
 # Charts & Signals Execution Desk
 if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
