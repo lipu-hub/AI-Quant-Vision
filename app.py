@@ -4,55 +4,80 @@ import pandas as pd
 import google.generativeai as genai
 import plotly.graph_objects as go
 
-# ⚡ Page Configuration with Dark Theme Styling
+# ⚡ Page Configuration
 st.set_page_config(page_title="MarketMind AI Terminal", layout="wide", initial_sidebar_state="expanded")
-
-# 🎨 Injecting Premium Custom CSS for Terminal Feel
-st.markdown("""
-<style>
-    /* Main Background & Text Color Global Adjustments */
-    .stApp {
-        background-color: #0b0f19;
-        color: #e2e8f0;
-    }
-    h1, h2, h3 {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-    }
-    /* Glassmorphic Trading Cards Design */
-    div[data-testid="stVComponentBlock"] > div[style*="border"] {
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
-        background: linear-gradient(145deg, #111827, #0f172a) !important;
-        padding: 20px !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
-        transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-    div[data-testid="stVComponentBlock"] > div[style*="border"]:hover {
-        transform: translateY(-2px);
-        border-color: rgba(99, 102, 241, 0.4) !important;
-    }
-    /* Metric Typography Fix */
-    .price-text {
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 1.8rem !important;
-        font-weight: bold;
-        color: #38bdf8;
-        margin: 5px 0px;
-    }
-    .stock-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #94a3b8;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # 🔐 Streamlit Secrets Verification
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
+
+# 🌓 THEME CONTROL INTERFACE IN SIDEBAR
+with st.sidebar:
+    st.markdown("## 🎨 Terminal Customization")
+    ui_theme = st.selectbox("Select Display Theme:", ["🟠 Deep Dark Orange", "⚪ Classic Light Orange"])
+    st.markdown("---")
+
+# 🎛️ DYNAMIC CSS INJECTION BASED ON USER SELECTION
+if ui_theme == "🟠 Deep Dark Orange":
+    bg_color = "#0b0f19"
+    text_color = "#e2e8f0"
+    card_bg = "linear-gradient(145deg, #111827, #0f172a)"
+    border_color = "rgba(249, 115, 22, 0.15)"
+    hover_border = "#f97316"
+    price_color = "#f97316" # Premium Orange Glow
+    title_color = "#94a3b8"
+    plotly_template = "plotly_dark"
+else:
+    bg_color = "#f8fafc"
+    text_color = "#0f172a"
+    card_bg = "#ffffff"
+    border_color = "rgba(249, 115, 22, 0.3)"
+    hover_border = "#ea580c"
+    price_color = "#ea580c" # Dark Orange for visibility
+    title_color = "#475569"
+    plotly_template = "plotly_white"
+
+st.markdown(f"""
+<style>
+    .stApp {{
+        background-color: {bg_color};
+        color: {text_color};
+    }
+    h1, h2, h3 {{
+        color: {text_color} !important;
+        font-weight: 700 !important;
+    }}
+    /* Dynamic Glassmorphic Trading Cards Design */
+    div[data-testid="stVComponentBlock"] > div[style*="border"] {{
+        border: 1px solid {border_color} !important;
+        border-radius: 12px !important;
+        background: {card_bg} !important;
+        padding: 20px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }}
+    div[data-testid="stVComponentBlock"] > div[style*="border"]:hover {{
+        transform: translateY(-2px);
+        border-color: {hover_border} !important;
+        box-shadow: 0 4px 20px rgba(249, 115, 22, 0.2) !important;
+    }}
+    /* Custom Typography Layouts */
+    .price-text {{
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 1.8rem !important;
+        font-weight: bold;
+        color: {price_color};
+        margin: 5px 0px;
+    }}
+    .stock-title {{
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: {title_color};
+    }}
+</style>
+""", unsafe_allow_html=True)
 
 tickers = [
     "SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS",
@@ -86,7 +111,7 @@ def fetch_trading_data(ticker_name):
 
 live_status = {}
 
-# 🚨 AUTO-SCANNER FRAGMENT WITH STYLISH ALERTS
+# 🚨 AUTO-SCANNER FRAGMENT
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
@@ -147,7 +172,7 @@ with st.sidebar:
                     st.toast(f"Position Closed for {p_ticker.replace('.NS','')}")
                     st.rerun()
     else:
-        st.info("No active simulator positions. Click 'Sim Buy 🛍️' on any card to trade.")
+        st.info("No active simulator positions. Click 'Sim' on cards to trade.")
 
 def generate_quant_signals(ticker_name, df, current_price):
     try:
@@ -177,7 +202,7 @@ if filter_choice == "🔥 Show Only BUY Alerts":
 elif filter_choice == "⚠️ Show Only EXIT Alerts":
     filtered_tickers = [t for t in tickers if current_market_snapshot.get(t, {}).get("status") == "EXIT"]
 
-# Grid Interface Layout (4 Columns Matrix for premium readability)
+# Grid Interface Layout (4 Columns Matrix)
 if not filtered_tickers:
     st.info("No stocks match this filter criteria right now. Check back during active movements!")
 else:
@@ -226,12 +251,12 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
                 low=raw_df['Low'].squeeze(), close=raw_df['Close'].squeeze(), name='Price Action'
             ))
             fig.add_trace(go.Scatter(
-                x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f59e0b', width=2), name='20 EMA Trend'
+                x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f97316', width=2), name='20 EMA Trend'
             ))
             fig.update_layout(
                 xaxis_rangeslider_visible=False, 
                 height=420, 
-                template="plotly_dark",
+                template=plotly_template,
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)'
             )
