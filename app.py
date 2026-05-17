@@ -3,6 +3,7 @@ import yfinance as yf
 import pandas as pd
 import google.generativeai as genai
 import plotly.graph_objects as go
+import requests
 
 # ⚡ Page Configuration
 st.set_page_config(page_title="MarketMind AI Terminal", layout="wide", initial_sidebar_state="expanded")
@@ -13,15 +14,32 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
 
-# INITIALIZE SESSION STATES FIRST (To prevent data loss on refresh)
+# 🤖 TELEGRAM BOT CONFIGURATION (Fetch from secrets or placeholders)
+TELEGRAM_BOT_TOKEN = st.secrets.get("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
+TELEGRAM_CHAT_ID = st.secrets.get("TELEGRAM_CHAT_ID", "YOUR_CHAT_ID_HERE")
+
+def send_telegram_notification(message):
+    if TELEGRAM_BOT_TOKEN == "YOUR_BOT_TOKEN_HERE" or TELEGRAM_CHAT_ID == "YOUR_CHAT_ID_HERE":
+        return False, "Telegram not configured in Secrets yet."
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "Markdown"}
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            return True, "Success"
+        return False, response.text
+    except Exception as e:
+        return False, str(e)
+
+# INITIALIZE SESSION STATES
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = {}
 if "selected_ticker" not in st.session_state:
     st.session_state.selected_ticker = None
-if "ai_analysis_result" not in st.session_state:
-    st.session_state.ai_analysis_result = None
 if "ticker_raw_name" not in st.session_state:
     st.session_state.ticker_raw_name = None
+if "ai_analysis_result" not in st.session_state:
+    st.session_state.ai_analysis_result = None
 if "live_prices" not in st.session_state:
     st.session_state.live_prices = {}
 
@@ -54,7 +72,7 @@ with st.sidebar:
         st.error("🔒 Incorrect Pin.")
     st.markdown("---")
 
-# 🎛️ INJECTING CLEAN WHITE LIGHT THEME STYLE BLOCK
+# 🎛️ INJECTING STYLE BLOCK
 bg_color = "#f8fafc"
 text_color = "#0f172a"
 card_bg = "#ffffff"
@@ -66,59 +84,25 @@ plotly_template = "plotly_white"
 
 st.markdown(f"""
 <style>
-    .stApp {{
-        background-color: {bg_color} !important;
-        color: {text_color} !important;
-    }}
-    h1, h2, h3, p, span, label {{
-        color: {text_color} !important;
-        font-weight: 600;
-    }}
-    div[data-testid="stMarkdownContainer"] p {{
-        color: {text_color} !important;
-    }}
+    .stApp {{ background-color: {bg_color} !important; color: {text_color} !important; }}
+    h1, h2, h3, p, span, label {{ color: {text_color} !important; font-weight: 600; }}
+    div[data-testid="stMarkdownContainer"] p {{ color: {text_color} !important; }}
     div[data-testid="stVComponentBlock"] > div[style*="border"] {{
         border: 1px solid {border_color} !important;
         border-radius: 12px !important;
         background: {card_bg} !important;
         padding: 20px !important;
         box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
-        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }}
-    div[data-testid="stVComponentBlock"] > div[style*="border"]:hover {{
-        transform: translateY(-2px);
-        border-color: {hover_border} !important;
-        box-shadow: 0 4px 18px rgba(234, 88, 12, 0.15) !important;
-    }}
-    .price-text {{
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 1.8rem !important;
-        font-weight: bold;
-        color: {price_color} !important;
-        margin: 5px 0px;
-    }}
-    .stock-title {{
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: {title_color} !important;
-    }}
-    button[data-testid="stBaseButton-secondary"] {{
-        background-color: #ffffff !important;
-        border: 1px solid {hover_border} !important;
-        color: {hover_border} !important;
-        border-radius: 8px !important;
-    }}
-    button[data-testid="stBaseButton-secondary"]:hover {{
-        background-color: {hover_border} !important;
-        color: white !important;
-    }}
+    .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.8rem !important; font-weight: bold; color: {price_color} !important; margin: 5px 0px; }}
+    .stock-title {{ font-size: 1.2rem; font-weight: 600; color: {title_color} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
 tickers = st.session_state.custom_tickers
 
 st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Budget Scanner with Real-Time Admin Asset Control")
+st.subheader("Live Budget Scanner with Phone Notification Engine")
 
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
@@ -130,7 +114,7 @@ def fetch_trading_data(ticker_name):
     except:
         return None
 
-# 🚨 AUTO-SCANNER FRAGMENT WITH LIVE MARKET FRESHNESS CHECK
+# 🚨 AUTO-SCANNER FRAGMENT
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
@@ -140,7 +124,6 @@ def live_alert_scanner():
     for ticker in tickers:
         df = yf.download(ticker, period="1d", interval="1m", auto_adjust=True, progress=False)
         if not df.empty:
-            # 🕒 Calculate time difference to stop alerts when market is closed
             latest_time = df.index[-1]
             current_time = pd.Timestamp.now(tz=latest_time.tz)
             time_diff_minutes = (current_time - latest_time).total_seconds() / 60
@@ -151,17 +134,15 @@ def live_alert_scanner():
             price_change = ((current_price - prev_price) / prev_price) * 100
             clean_name = ticker.replace(".NS", "")
             
-            # Save to persistent state
             st.session_state.live_prices[ticker] = {"price": current_price, "change": price_change, "status": "STABLE"}
             
-            # Alerts generate only if the data stream is fresh (less than 15 mins old)
             if time_diff_minutes < 15:
                 if price_change > 0.12:
-                    st.success(f"🔥 **IMMEDIATE BUY ALERT:** {clean_name} is spiking up! Price: {current_price:.2f} (+{price_change:.2f}%)")
+                    st.success(f"🔥 **IMMEDIATE BUY ALERT:** {clean_name} (+{price_change:.2f}%)")
                     st.session_state.live_prices[ticker]["status"] = "BUY"
                     buy_list.append(ticker)
                 elif price_change < -0.12:
-                    st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} is dropping fast! Dump/Exit now! Price: {current_price:.2f} ({price_change:.2f}%)")
+                    st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} ({price_change:.2f}%)")
                     st.session_state.live_prices[ticker]["status"] = "EXIT"
                     exit_list.append(ticker)
                 
@@ -171,18 +152,15 @@ def live_alert_scanner():
 live_alert_scanner()
 st.markdown("---")
 
-# 🚦 SMART FILTER BUTTONS INTERFACE
 st.markdown("### 🔍 Intelligent Asset Filter")
 filter_choice = st.radio("Filter Dashboard Assets By:", ["Show All Active Assets", "🔥 Show Only BUY Alerts", "⚠️ Show Only EXIT Alerts"], horizontal=True)
 
-# Filter tickers logic
 filtered_tickers = tickers
 if filter_choice == "🔥 Show Only BUY Alerts":
     filtered_tickers = [t for t in tickers if st.session_state.live_prices.get(t, {}).get("status") == "BUY"]
 elif filter_choice == "⚠️ Show Only EXIT Alerts":
     filtered_tickers = [t for t in tickers if st.session_state.live_prices.get(t, {}).get("status") == "EXIT"]
 
-# Grid Interface Layout
 if not filtered_tickers:
     st.info("No stocks match this filter criteria right now.")
 else:
@@ -227,10 +205,9 @@ else:
                 except Exception as e:
                     st.error(f"Error handling {ticker}")
 
-# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK (Now locked with state caching)
+# 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK
 with st.sidebar:
     st.markdown("## 💰 Live Practice Portfolio")
-    st.markdown("*(Fake Money Trading Simulation)*")
     st.markdown("---")
     if st.session_state.portfolio:
         for p_ticker, p_data in list(st.session_state.portfolio.items()):
@@ -242,12 +219,16 @@ with st.sidebar:
                 st.markdown(f"### {p_ticker.replace('.NS','')}")
                 st.markdown(f"Qty: **{p_data['qty']}** | Avg: **{p_data['buy_price']:.2f}**")
                 st.markdown(f"Current: **{live_p:.2f}**")
-                st.markdown(f"P&L: <span style='color:{color}; font-weight:bold; font-size:1.2rem;'>₹{current_pnl:.2f}</span>", unsafe_allow_html=True)
-                if st.button(f"Square Off ❌", key=f"sell_{p_ticker}"):
+                st.markdown(f"P&L: <span style='color:{color}; font-weight:bold;'>₹{current_pnl:.2f}</span>", unsafe_allow_html=True)
+                
+                # 📲 TELEGRAM PUSH FOR INDIVIDUAL SQUARE OFF
+                if st.button(f"Square Off ❌", key=f"sell_{p_ticker}", use_container_width=True):
+                    tg_msg = f"🚨 *SQUARE OFF ALERT* 🚨\n\nAsset: {p_ticker.replace('.NS','')}\nExit Price: {live_p:.2f}\nFinal P&L: ₹{current_pnl:.2f}\n\nPosition Closed Successfully!"
+                    send_telegram_notification(tg_msg)
                     del st.session_state.portfolio[p_ticker]
                     st.rerun()
     else:
-        st.info("No active simulator positions. Click 'Sim Buy 🛍️' on cards to trade.")
+        st.info("No active simulator positions.")
 
 # Charts & Signals Execution Desk
 if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
@@ -263,9 +244,7 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
                 x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(),
                 low=raw_df['Low'].squeeze(), close=raw_df['Close'].squeeze(), name='Price Action'
             ))
-            fig.add_trace(go.Scatter(
-                x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f97316', width=2), name='20 EMA Trend'
-            ))
+            fig.add_trace(go.Scatter(x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f97316', width=2), name='20 EMA Trend'))
             fig.update_layout(xaxis_rangeslider_visible=False, height=420, template=plotly_template, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig, use_container_width=True)
             
@@ -273,3 +252,14 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
         with st.container(border=True):
             st.markdown("### 🤖 Executable AI Strategy")
             st.markdown(st.session_state.ai_analysis_result)
+            st.markdown("---")
+            
+            # 🔥 MANUAL TELEGRAM SIGNAL TRIGGER BUTTON
+            if st.button("📲 Send Signal Alert to Phone", use_container_width=True):
+                with st.spinner("Sending alert..."):
+                    clean_tg_text = f"🎯 *MARKETMIND QUANT SIGNAL* 🎯\n\nAsset: {st.session_state.selected_ticker}\n\n{st.session_state.ai_analysis_result}"
+                    success, error_msg = send_telegram_notification(clean_tg_text)
+                    if success:
+                        st.success("🚀 Alert sent to your phone Telegram app!")
+                    else:
+                        st.error(f"Failed to send: {error_msg}. Check Secrets configuration.")
