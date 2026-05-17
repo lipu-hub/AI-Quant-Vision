@@ -124,7 +124,7 @@ tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
 st.subheader("Live Budget Scanner with Real-Time Admin Asset Control")
 
-# 🧠 GOD MODE: Advanced Quant Indicators Engine
+# 🧠 Advanced Quant Indicators Engine
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
     try:
@@ -140,13 +140,14 @@ def fetch_trading_data(ticker_name):
             rs = gain / (loss + 1e-10)
             df['RSI'] = 100 - (100 / (1 + rs))
             
-            # 3. Volume Surge (Institutional Volume Detection)
+            # 3. Volume Surge
             df['Vol_Avg'] = df['Volume'].rolling(window=5).mean()
             df['Vol_Surge'] = df['Volume'] > (df['Vol_Avg'] * 1.5)
             
             return df
     except Exception as e:
         return None
+    return None
 
 live_status = {}
 
@@ -159,7 +160,11 @@ def live_alert_scanner():
     for ticker in tickers:
         df = yf.download(ticker, period="1d", interval="1m", auto_adjust=True, progress=False)
         if not df.empty:
-            close_series = df['Close'].squeeze()
+            # Safe parsing for Series data to prevent squeeze errors
+            close_series = df['Close']
+            if isinstance(close_series, pd.DataFrame):
+                close_series = close_series.iloc[:, 0]
+                
             current_price = float(close_series.iloc[-1])
             prev_price = float(close_series.iloc[-2]) if len(close_series) > 1 else current_price
             clean_name = ticker.replace(".NS", "")
@@ -239,7 +244,6 @@ def generate_quant_signals(ticker_name, df, current_price):
         
         Format the output using highly polished Markdown with clean bold structure and professional financial tone.
         """
-        # Using the advanced flash model from your repository structure
         model = genai.GenerativeModel('models/gemini-2.5-flash')
         response = model.generate_content(god_mode_prompt)
         return response.text
@@ -263,7 +267,10 @@ else:
             data_df = fetch_trading_data(ticker)
             if data_df is not None and not data_df.empty:
                 try:
-                    close_series = data_df['Close'].squeeze()
+                    close_series = data_df['Close']
+                    if isinstance(close_series, pd.DataFrame):
+                        close_series = close_series.iloc[:, 0]
+                        
                     latest_price = float(close_series.iloc[-1])
                     symbol = "$" if "USD" in ticker else "₹"
                     clean_name = ticker.replace(".NS", "")
@@ -297,15 +304,15 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
             fig = go.Figure()
             fig.add_trace(go.Candlestick(
                 x=raw_df.index, 
-                open=raw_df['Open'].squeeze(), 
-                high=raw_df['High'].squeeze(), 
-                low=raw_df['Low'].squeeze(), 
-                close=raw_df['Close'].squeeze(), 
+                open=raw_df['Open'].iloc[:, 0] if isinstance(raw_df['Open'], pd.DataFrame) else raw_df['Open'], 
+                high=raw_df['High'].iloc[:, 0] if isinstance(raw_df['High'], pd.DataFrame) else raw_df['High'], 
+                low=raw_df['Low'].iloc[:, 0] if isinstance(raw_df['Low'], pd.DataFrame) else raw_df['Low'], 
+                close=raw_df['Close'].iloc[:, 0] if isinstance(raw_df['Close'], pd.DataFrame) else raw_df['Close'], 
                 name='Price Action'
             ))
             fig.add_trace(go.Scatter(
                 x=raw_df.index, 
-                y=raw_df['EMA_20'].squeeze(), 
+                y=raw_df['EMA_20'].iloc[:, 0] if isinstance(raw_df['EMA_20'], pd.DataFrame) else raw_df['EMA_20'], 
                 line=dict(color='#f97316', width=2), 
                 name='20 EMA Trend'
             ))
