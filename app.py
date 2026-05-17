@@ -13,12 +13,13 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
 
-tickers = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "LICI.NS", "BTC-USD", "ETH-USD"]
+# 💸 BUDGET-FRIENDLY TICKERS LIST FOR EVERYONE
+tickers = ["SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS", "BTC-USD", "ETH-USD"]
 
 st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Market Scanner & Immediate Alerts")
+st.subheader("Live Budget Market Scanner & Immediate Alerts")
 
-@st.cache_data(ttl=30) # Fetching speed optimized to 30 seconds for immediate action
+@st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
     try:
         df = yf.download(ticker_name, period="1mo", interval="15m", auto_adjust=True, progress=False)
@@ -28,7 +29,7 @@ def fetch_trading_data(ticker_name):
     except Exception as e:
         return None
 
-# 🚨 DYNAMIC LIVE SCANNER FRAGMENT (Runs automatically in background every 15 seconds)
+# 🚨 DYNAMIC LIVE SCANNER FRAGMENT
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
@@ -41,15 +42,15 @@ def live_alert_scanner():
             current_price = float(close_series.iloc[-1])
             prev_price = float(close_series.iloc[-2]) if len(close_series) > 1 else current_price
             
-            clean_name = ticker.replace(".NS", "").replace("LICI", "LIC")
+            clean_name = ticker.replace(".NS", "")
             price_change = ((current_price - prev_price) / prev_price) * 100
             
-            # ⚡ Algorithmic Immediate Conditions (Spike Detection)
-            if price_change > 0.15: # Immediate Buying Momentum
+            # Algorithmic Spike Detection
+            if price_change > 0.15:
                 st.toast(f"🔥 ALERT: Buy Momentum in {clean_name}!", icon="🚀")
                 st.success(f"🚨 **IMMEDIATE BUY ALERT:** {clean_name} is spiking up! Current Price: {current_price:.2f} (+{price_change:.2f}%)")
                 alert_triggered = True
-            elif price_change < -0.15: # Immediate Selling Momentum
+            elif price_change < -0.15:
                 st.toast(f"⚠️ ALERT: Exit/Short {clean_name} immediately!", icon="💥")
                 st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} is dropping fast! Dump/Exit now! Current Price: {current_price:.2f} ({price_change:.2f}%)")
                 alert_triggered = True
@@ -57,7 +58,7 @@ def live_alert_scanner():
     if not alert_triggered:
         st.info("🔄 Scanning 1-minute order flows... Markets are stable. No immediate breakout alerts right now.")
 
-# Render Live Scanner at the very top for active views
+# Render Live Scanner
 live_alert_scanner()
 st.markdown("---")
 
@@ -75,7 +76,7 @@ def generate_quant_signals(ticker_name, df, current_price):
         ema_now = float(df['EMA_20'].iloc[-1])
         
         prompt = f"""
-        You are an elite quantitative trading hedge-fund manager. Analyze this asset for Swing/Daily Trading: {ticker_name}.
+        You are an elite quantitative trading hedge-fund manager. Analyze this budget asset for Short-term/Daily Trading: {ticker_name}.
         Current Market Price: {current_price}
         20-Day EMA Value: {ema_now:.2f}
         Recent 10-day market movement:
@@ -83,7 +84,7 @@ def generate_quant_signals(ticker_name, df, current_price):
         Provide a strategic trading action block in clean markdown formatting:
         1. 🚦 **TRADING SIGNAL**: Clear (STRONG BUY / BUY / HOLD / SELL).
         2. 🎯 **MATHEMATICAL TARGETS**: Provide an entry zone, Target 1, Target 2, and a strict Stop-Loss (SL) level.
-        3. 🔍 **QUANTS RATIONALE**: Why this trade makes sense. Do not include financial advice disclaimers.
+        3. 🔍 **QUANTS RATIONALE**: Focus on low-budget retail traders setup. Why this trade makes sense. Do not include financial advice disclaimers.
         """
         model = genai.GenerativeModel('models/gemini-2.5-flash')
         response = model.generate_content(prompt)
@@ -104,7 +105,7 @@ for i, ticker in enumerate(tickers):
                 
                 symbol = "$" if "USD" in ticker else "₹"
                 clean_name = ticker.replace(".NS", "")
-                display_name = "LIC" if clean_name == "LICI" else clean_name
+                display_name = clean_name
                 
                 with st.container(border=True):
                     st.markdown(f"### {display_name}")
