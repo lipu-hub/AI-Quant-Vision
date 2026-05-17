@@ -13,10 +13,57 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
 
-# 🌓 THEME CONTROL INTERFACE IN SIDEBAR
+# Initialize Session States
+if "portfolio" not in st.session_state:
+    st.session_state.portfolio = {}
+if "selected_ticker" not in st.session_state:
+    st.session_state.selected_ticker = None
+if "ai_analysis_result" not in st.session_state:
+    st.session_state.ai_analysis_result = None
+if "ticker_raw_name" not in st.session_state:
+    st.session_state.ticker_raw_name = None
+
+# 🛠️ ADMIN PANEL: Dynamic Ticker List State Initialization
+if "custom_tickers" not in st.session_state:
+    # Default initial 20 stock bucket setup
+    st.session_state.custom_tickers = [
+        "SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS",
+        "IDEA.NS", "YESBANK.NS", "JPPOWER.NS", "RVNL.NS", "TATAPOWER.NS",
+        "NHPC.NS", "SJVN.NS", "NBCC.NS", "HUDCO.NS", "IOC.NS",
+        "SAIL.NS", "GAIL.NS", "IFCI.NS", "BTC-USD", "ETH-USD"
+    ]
+
+# 🌓 THEME CONTROL & ADMIN WORKBENCH IN SIDEBAR
 with st.sidebar:
     st.markdown("## 🎨 Terminal Customization")
     ui_theme = st.selectbox("Select Display Theme:", ["🟠 Deep Dark Orange", "⚪ Classic Light Orange"])
+    st.markdown("---")
+    
+    # ⚙️ SECURE ADMIN CONSOLE INTERFACE
+    st.markdown("## ⚙️ Core Admin Console")
+    admin_pin = st.text_input("Enter Admin Master Pin:", type="password", help="Enter pin to unlock stock controller database flow.")
+    
+    # Master Pin Protection Check (Simple safety lock e.g., '1234' or any string you want)
+    if admin_pin == "777": 
+        st.success("🔓 Admin Access Granted!")
+        
+        # Add New Stock Interface
+        new_ticker = st.text_input("Add Ticker Name (e.g., RELIANCE.NS, DOGE-USD):").upper().strip()
+        if st.button("➕ Inject Asset into Engine"):
+            if new_ticker and new_ticker not in st.session_state.custom_tickers:
+                st.session_state.custom_tickers.append(new_ticker)
+                st.toast(f"Injected {new_ticker} successfully into the matrix grid flow!")
+                st.rerun()
+                
+        # Remove Existing Stock Interface
+        st.markdown("---")
+        ticker_to_remove = st.selectbox("Select Asset to Liquidate/Remove:", ["None"] + st.session_state.custom_tickers)
+        if ticker_to_remove != "None" and st.button("❌ Terminate Asset"):
+            st.session_state.custom_tickers.remove(ticker_to_remove)
+            st.toast(f"Terminated {ticker_to_remove} entry configuration.")
+            st.rerun()
+    elif admin_pin != "":
+        st.error("🔒 Incorrect Pin Token. Engine access locked.")
     st.markdown("---")
 
 # 🎛️ DYNAMIC CSS INJECTION BASED ON USER SELECTION
@@ -26,7 +73,7 @@ if ui_theme == "🟠 Deep Dark Orange":
     card_bg = "linear-gradient(145deg, #111827, #0f172a)"
     border_color = "rgba(249, 115, 22, 0.3)"
     hover_border = "#f97316"
-    price_color = "#f97316" # Premium Orange Glow
+    price_color = "#f97316"
     title_color = "#94a3b8"
     plotly_template = "plotly_dark"
 else:
@@ -35,26 +82,15 @@ else:
     card_bg = "#ffffff"
     border_color = "rgba(234, 88, 12, 0.4)"
     hover_border = "#ea580c"
-    price_color = "#ea580c" # Dark Orange for visibility
+    price_color = "#ea580c"
     title_color = "#475569"
     plotly_template = "plotly_white"
 
 st.markdown(f"""
 <style>
-    /* Global Background and Text Adjustment */
-    .stApp {{
-        background-color: {bg_color} !important;
-        color: {text_color} !important;
-    }}
-    h1, h2, h3, p, span, label {{
-        color: {text_color} !important;
-        font-weight: 600;
-    }}
-    /* Fix for Streamlit Radio/Select text colors in Light/Dark shifts */
-    div[data-testid="stMarkdownContainer"] p {{
-        color: {text_color} !important;
-    }}
-    /* Dynamic Glassmorphic Trading Cards Design with Orange Accent */
+    .stApp {{ background-color: {bg_color} !important; color: {text_color} !important; }}
+    h1, h2, h3, p, span, label {{ color: {text_color} !important; font-weight: 600; }}
+    div[data-testid="stMarkdownContainer"] p {{ color: {text_color} !important; }}
     div[data-testid="stVComponentBlock"] > div[style*="border"] {{
         border: 1px solid {border_color} !important;
         border-radius: 12px !important;
@@ -68,52 +104,18 @@ st.markdown(f"""
         border-color: {hover_border} !important;
         box-shadow: 0 4px 20px rgba(249, 115, 22, 0.25) !important;
     }}
-    /* Custom Typography Layouts */
-    .price-text {{
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 1.8rem !important;
-        font-weight: bold;
-        color: {price_color} !important;
-        margin: 5px 0px;
-    }}
-    .stock-title {{
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: {title_color} !important;
-    }}
-    /* Custom Styling for Streamlit Buttons to match Orange theme */
-    button[data-testid="stBaseButton-secondary"] {{
-        background-color: transparent !important;
-        border: 1px solid {hover_border} !important;
-        color: {text_color} !important;
-        border-radius: 8px !important;
-    }}
-    button[data-testid="stBaseButton-secondary"]:hover {{
-        background-color: {hover_border} !important;
-        color: white !important;
-    }}
+    .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.8rem !important; font-weight: bold; color: {price_color} !important; margin: 5px 0px; }}
+    .stock-title {{ font-size: 1.2rem; font-weight: 600; color: {title_color} !important; }}
+    button[data-testid="stBaseButton-secondary"] {{ background-color: transparent !important; border: 1px solid {hover_border} !important; color: {text_color} !important; border-radius: 8px !important; }}
+    button[data-testid="stBaseButton-secondary"]:hover {{ background-color: {hover_border} !important; color: white !important; }}
 </style>
 """, unsafe_allow_html=True)
 
-tickers = [
-    "SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS",
-    "IDEA.NS", "YESBANK.NS", "JPPOWER.NS", "RVNL.NS", "TATAPOWER.NS",
-    "NHPC.NS", "SJVN.NS", "NBCC.NS", "HUDCO.NS", "IOC.NS",
-    "SAIL.NS", "GAIL.NS", "IFCI.NS", "BTC-USD", "ETH-USD"
-]
+# Use dynamic list controlled by admin session matrix
+tickers = st.session_state.custom_tickers
 
 st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live 20-Asset Budget Scanner with Simulator & Filters")
-
-# Initialize Session States
-if "portfolio" not in st.session_state:
-    st.session_state.portfolio = {}
-if "selected_ticker" not in st.session_state:
-    st.session_state.selected_ticker = None
-if "ai_analysis_result" not in st.session_state:
-    st.session_state.ai_analysis_result = None
-if "ticker_raw_name" not in st.session_state:
-    st.session_state.ticker_raw_name = None
+st.subheader("Live Budget Scanner with Real-Time Admin Asset Control")
 
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
@@ -165,7 +167,7 @@ st.markdown("---")
 
 # 🚦 SMART FILTER BUTTONS INTERFACE
 st.markdown("### 🔍 Intelligent Asset Filter")
-filter_choice = st.radio("Filter Dashboard Assets By:", ["Show All 20 Assets", "🔥 Show Only BUY Alerts", "⚠️ Show Only EXIT Alerts"], horizontal=True)
+filter_choice = st.radio("Filter Dashboard Assets By:", ["Show All Active Assets", "🔥 Show Only BUY Alerts", "⚠️ Show Only EXIT Alerts"], horizontal=True)
 
 # 💰 VIRTUAL PORTFOLIO SIMULATOR SIDEBAR DESK
 with st.sidebar:
