@@ -32,7 +32,7 @@ def fetch_trading_data(ticker_name):
 def generate_quant_signals(ticker_name, df, current_price):
     try:
         recent_data = df.tail(10)[['Close', 'High', 'Low']].to_string()
-        ema_now = df['EMA_20'].iloc[-1]
+        ema_now = float(df['EMA_20'].iloc[-1])
         
         prompt = f"""
         You are an elite quantitative trading hedge-fund manager. Analyze this asset for Swing/Daily Trading: {ticker_name}.
@@ -46,7 +46,7 @@ def generate_quant_signals(ticker_name, df, current_price):
         1. 🚦 **TRADING SIGNAL**: Clear (STRONG BUY / BUY / HOLD / SELL) based on context.
         2. 🎯 **MATHEMATICAL TARGETS**: Provide an entry zone, Target 1, Target 2, and a strict Stop-Loss (SL) level.
         3. 🔍 **QUANTS RATIONALE**: Why this trade makes sense for short-term profit in 2-3 sentences max.
-        Keep it highly analytical, direct, and focused on making a profitable trade execution. Do not include boring statutory disclaimers.
+        Keep it highly analytical, direct, and focused on making a profitable trade execution. Do not include financial advice disclaimers.
         """
         
         model = genai.GenerativeModel('models/gemini-2.5-flash')
@@ -70,6 +70,7 @@ for i, ticker in enumerate(tickers):
         
         if data_df is not None and not data_df.empty:
             try:
+                # 🛠️ Safe extraction for both Stocks and Crypto arrays
                 close_series = data_df['Close'].squeeze()
                 latest_price = float(close_series.iloc[-1])
                 
@@ -81,10 +82,11 @@ for i, ticker in enumerate(tickers):
                     st.markdown(f"### {display_name}")
                     st.markdown(f"# {symbol}{latest_price:,.2f}")
                     
+                    # 🛠️ FIXED lowercase st.spinner
                     if st.button(f"Generate Signal 🎯", key=ticker):
                         st.session_state.selected_ticker = display_name
                         st.session_state.ticker_raw_name = ticker
-                        with St.spinner(f"Scanning market algorithms for {display_name}..."):
+                        with st.spinner(f"Scanning market algorithms for {display_name}..."):
                             analysis = generate_quant_signals(ticker, data_df, latest_price)
                             st.session_state.ai_analysis_result = analysis
                         
@@ -98,24 +100,36 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
     
     chart_col, signal_col = st.columns([3, 2])
     
-    # Left Column: Interactive Candlestick Chart + Technical Indicators
     with chart_col:
         raw_df = fetch_trading_data(st.session_state.ticker_raw_name)
-        if raw_df is not None:
+        if raw_df is not None and not raw_df.empty:
             fig = go.Figure()
-            # Candlesticks
+            
+            # 📈 🛠️ Clean Multidimensional mapping for explicit Plotly rendering
             fig.add_trace(go.Candlestick(
-                x=raw_df.index, open=raw_df['Open'], high=raw_df['High'],
-                low=raw_df['Low'], close=raw_df['Close'], name='Price Action'
+                x=raw_df.index,
+                open=raw_df['Open'].squeeze(),
+                high=raw_df['High'].squeeze(),
+                low=raw_df['Low'].squeeze(),
+                close=raw_df['Close'].squeeze(),
+                name='Price Action'
             ))
-            # EMA Overlay Line
+            
             fig.add_trace(go.Scatter(
-                x=raw_df.index, y=raw_df['EMA_20'], line=dict(color='orange', width=1.5), name='20 EMA Trend'
+                x=raw_df.index, 
+                y=raw_df['EMA_20'].squeeze(), 
+                line=dict(color='orange', width=2), 
+                name='20 EMA Trend'
             ))
-            fig.update_layout(title=f"{st.session_state.selected_ticker} Technical Chart", xaxis_rangeslider_visible=False, height=450)
+            
+            fig.update_layout(
+                title=f"{st.session_state.selected_ticker} Technical Chart",
+                xaxis_rangeslider_visible=False,
+                height=450,
+                template="plotly_white"
+            )
             st.plotly_chart(fig, use_container_width=True)
             
-    # Right Column: AI Target, Entry & Stop-Loss Signals
     with signal_col:
         with st.container(border=True):
             st.markdown("### 🤖 Executable AI Strategy")
