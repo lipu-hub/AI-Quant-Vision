@@ -3,7 +3,6 @@ import yfinance as yf
 import pandas as pd
 import google.generativeai as genai
 import plotly.graph_objects as go
-import requests
 
 # ⚡ Page Configuration
 st.set_page_config(page_title="MarketMind AI Terminal", layout="wide", initial_sidebar_state="expanded")
@@ -46,7 +45,7 @@ with st.sidebar:
                 st.rerun()
     st.markdown("---")
 
-# 🎛️ INJECTING PREMIUM STYLE BLOCK WITH LOGO WRAPPERS
+# 🎛️ INJECTING PREMIUM STYLE BLOCK
 bg_color = "#f8fafc"
 text_color = "#0f172a"
 card_bg = "#ffffff"
@@ -66,35 +65,45 @@ div[data-testid="stVComponentBlock"] > div[style*="border"] {{
     box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
 }}
 .card-header-flex {{ display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }}
-.company-logo-img {{ width: 40px; height: 40px; border-radius: 8px; object-fit: contain; background: #ffffff; border: 1px solid #e2e8f0; padding: 2px; }}
+.company-logo-avatar {{ 
+    width: 40px; 
+    height: 40px; 
+    border-radius: 8px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 1.5rem; 
+    font-weight: bold; 
+    color: white;
+}}
 .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.7rem !important; font-weight: bold; color: {price_color} !important; margin: 2px 0px; }}
 .stock-title {{ font-size: 1.1rem; font-weight: bold; color: {title_color} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
-# ✨ EXPERT FIX: Direct Raw Vector GitHub links that never get blocked by CORS
-def get_stock_logo_url(ticker):
-    logos = {
-        "SUZLON": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/SUZLON.png",
-        "RVNL": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/RVNL.png",
-        "NBCC": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/NBCC.png",
-        "GAIL": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/GAIL.png",
-        "IRFC": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/IRFC.png",
-        "IDEA": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/VI.png",
-        "TATAPOWER": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/TATAPOWER.png",
-        "HUDCO": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/HUDCO.png",
-        "IFCI": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/IFCI.png",
-        "YESBANK": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/YESBANK.png",
-        "NHPC": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/NHPC.png",
-        "IOC": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/IOC.png",
-        "PNB": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/PNB.png",
-        "JPPOWER": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/JPPOWER.png",
-        "SJVN": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/SJVN.png",
-        "SAIL": "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/SAIL.png",
-        "BTC-USD": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/btc.png",
-        "ETH-USD": "https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eth.png"
+# ✨ ROCK-SOLID FIX: Custom premium brand color-coded avatars that bypass all blocking blocks
+def get_brand_avatar(ticker):
+    brands = {
+        "SUZLON": {"bg": "#0284c7", "txt": "SZ"}, # Sky Blue
+        "RVNL": {"bg": "#b91c1c", "txt": "RV"},   # Rail Red
+        "NBCC": {"bg": "#0f766e", "txt": "NB"},   # Teal Build
+        "GAIL": {"bg": "#15803d", "txt": "GL"},   # Gas Green
+        "IRFC": {"bg": "#1e3a8a", "txt": "IF"},   # Navy Finance
+        "IDEA": {"bg": "#e11d48", "txt": "VI"},   # Vi Red
+        "TATAPOWER": {"bg": "#0369a1", "txt": "TP"},# Tata Blue
+        "HUDCO": {"bg": "#4d7c0f", "txt": "HD"},  # Olive
+        "IFCI": {"bg": "#6d28d9", "txt": "IF"},   # Purple
+        "YESBANK": {"bg": "#2563eb", "txt": "YB"},# Yes Blue
+        "NHPC": {"bg": "#0369a1", "txt": "NH"},   # Hydro Blue
+        "IOC": {"bg": "#ea580c", "txt": "IO"},    # Orange
+        "PNB": {"bg": "#991b1b", "txt": "PB"},    # Punjab Maroon
+        "JPPOWER": {"bg": "#d97706", "txt": "JP"},# Amber
+        "SJVN": {"bg": "#475569", "txt": "SJ"},   # Slate
+        "SAIL": {"bg": "#1e40af", "txt": "SL"},   # Steel Blue
+        "BTC-USD": {"bg": "#f59e0b", "txt": "₿"}, # Bitcoin Gold
+        "ETH-USD": {"bg": "#6366f1", "txt": "Ξ"}  # Ethereum Purple
     }
-    return logos.get(ticker, "https://raw.githubusercontent.com/SACHIN-MISHRA-PROGRAMMER/Stock-Logos/main/logos/GENERIC.png")
+    return brands.get(ticker, {"bg": "#475569", "txt": "ST"})
 
 tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
@@ -136,12 +145,12 @@ for i, ticker in enumerate(tickers):
             latest_price = float(close_series.iloc[-1])
             symbol = "$" if "USD" in ticker else "₹"
             clean_name = ticker.replace(".NS", "")
-            img_url = get_stock_logo_url(clean_name)
+            meta = get_brand_avatar(clean_name)
             
             with st.container(border=True):
                 st.markdown(f"""
                 <div class="card-header-flex">
-                    <img class="company-logo-img" src="{img_url}">
+                    <div class="company-logo-avatar" style="background-color: {meta['bg']};">{meta['txt']}</div>
                     <div class="stock-title">{clean_name}</div>
                 </div>
                 """, unsafe_allow_html=True)
