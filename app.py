@@ -26,7 +26,7 @@ def fetch_single_ticker(ticker_name):
     except Exception as e:
         return None
 
-# 🧠 Gemini AI Analysis Logic
+# 🧠 New Gemini 2.5 Engine Logic
 def generate_ai_analysis(ticker_name, df, current_price):
     try:
         recent_data = df.tail(5)[['Close', 'High', 'Low']].to_string()
@@ -45,8 +45,8 @@ def generate_ai_analysis(ticker_name, df, current_price):
         Keep it direct, professional, and do not include financial advice disclaimers.
         """
         
-        # 🛠️ FIX: Switching to 'gemini-pro' which is rock-solid on free tier API keys
-        model = genai.GenerativeModel('gemini-pro')
+        # 🛠️ CRITICAL FIX: Google ke latest free core endpoints ka exact production path
+        model = genai.GenerativeModel('models/gemini-2.5-flash')
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
