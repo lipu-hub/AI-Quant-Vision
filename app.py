@@ -14,21 +14,6 @@ if "GEMINI_API_KEY" in st.secrets:
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
 
-# 🤖 TELEGRAM BOT CONFIGURATION (Optional / Baseline Keep)
-TELEGRAM_BOT_TOKEN = st.secrets.get("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
-TELEGRAM_CHAT_ID = st.secrets.get("TELEGRAM_CHAT_ID", "YOUR_CHAT_ID_HERE")
-
-def send_telegram_notification(message):
-    if TELEGRAM_BOT_TOKEN == "YOUR_BOT_TOKEN_HERE" or TELEGRAM_CHAT_ID == "YOUR_CHAT_ID_HERE":
-        return False, "Telegram not configured."
-    try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "Markdown"}
-        response = requests.post(url, json=payload, timeout=10)
-        return response.status_code == 200, response.text
-    except:
-        return False, "Error"
-
 # INITIALIZE SESSION STATES
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = {}
@@ -61,7 +46,7 @@ with st.sidebar:
                 st.rerun()
     st.markdown("---")
 
-# 🎛️ INJECTING STYLE BLOCK WITH LOGO WRAPPERS
+# 🎛️ INJECTING STYLE BLOCK
 bg_color = "#f8fafc"
 text_color = "#0f172a"
 card_bg = "#ffffff"
@@ -81,24 +66,21 @@ div[data-testid="stVComponentBlock"] > div[style*="border"] {{
     box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
 }}
 .card-header-flex {{ display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }}
-.company-logo {{ width: 36px; height: 36px; border-radius: 6px; object-fit: contain; background: #f1f5f9; padding: 2px; }}
 .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.7rem !important; font-weight: bold; color: {price_color} !important; margin: 2px 0px; }}
-.stock-title {{ font-size: 1.1rem; font-weight: bold; color: {title_color} !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+.stock-title {{ font-size: 1.2rem; font-weight: bold; color: {title_color} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
-# Helper to map Indian stock tickers to domain logos easily
-def get_logo_domain(ticker):
-    mapping = {
-        "SUZLON": "suzlon.com", "RVNL": "rvnl.org", "NBCC": "nbccindia.in", 
-        "GAIL": "gailonline.com", "IRFC": "irfc.co.in", "IDEA": "myvi.in", 
-        "TATAPOWER": "tatapower.com", "HUDCO": "hudco.org", "IFCI": "ifciltd.com", 
-        "YESBANK": "yesbank.in", "NHPC": "nhpcindia.com", "IOC": "iocl.com", 
-        "PNB": "pnbindia.in", "JPPOWER": "jppowerventures.com", "SJVN": "sjvn.nic.in", 
-        "SAIL": "sail.co.in", "BTC-USD": "bitcoin.org", "ETH-USD": "ethereum.org"
+# ✨ THE FIX: Solid high-res custom backup icons for clean dashboard render
+def get_stock_logo(ticker):
+    logos = {
+        "SUZLON": "⚡", "RVNL": "🚂", "NBCC": "🏢", "GAIL": "🔥", 
+        "IRFC": "💰", "IDEA": "📱", "TATAPOWER": "🔌", "HUDCO": "🏠", 
+        "IFCI": "🏦", "YESBANK": "🏛️", "NHPC": "🌊", "IOC": "🛢️", 
+        "PNB": "📉", "JPPOWER": "💡", "SJVN": "⚙️", "SAIL": "🏗️",
+        "BTC-USD": "₿", "ETH-USD": "♦️"
     }
-    domain = mapping.get(ticker, "google.com")
-    return f"https://logo.clearbit.com/{domain}"
+    return logos.get(ticker, "📈")
 
 tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
@@ -140,13 +122,13 @@ for i, ticker in enumerate(tickers):
             latest_price = float(close_series.iloc[-1])
             symbol = "$" if "USD" in ticker else "₹"
             clean_name = ticker.replace(".NS", "")
-            logo_url = get_logo_domain(clean_name)
+            stock_icon = get_stock_logo(clean_name)
             
             with st.container(border=True):
-                # Custom Row layout for Dynamic Logo + Company Title
+                # Clean Layout using high-quality indicators instead of broken image URLs
                 st.markdown(f"""
                 <div class="card-header-flex">
-                    <img class="company-logo" src="{logo_url}" onerror="this.src='https://logo.clearbit.com/google.com'">
+                    <span style="font-size: 2rem; background: #f1f5f9; padding: 4px 8px; border-radius: 8px;">{stock_icon}</span>
                     <div class="stock-title">{clean_name}</div>
                 </div>
                 """, unsafe_allow_html=True)
