@@ -45,8 +45,8 @@ def generate_ai_analysis(ticker_name, df, current_price):
         Keep it direct, professional, and do not include financial advice disclaimers.
         """
         
-        # 🛠️ FIX: Using the production-ready alias name that bypasses v1beta 404 errors
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # 🛠️ FIX: Switching to 'gemini-pro' which is rock-solid on free tier API keys
+        model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
