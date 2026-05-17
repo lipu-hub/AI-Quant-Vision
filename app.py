@@ -10,11 +10,11 @@ tickers = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "LICI.NS", "B
 st.title("🚀 MarketMind AI Terminal")
 st.subheader("Market Overview")
 
-# 2. Single Ticker Fetching Function (No MultiIndex mix-up)
+# 2. Single Ticker Fetching Function
 @st.cache_data(ttl=60)
 def fetch_single_ticker(ticker_name):
     try:
-        # 1mo data le rahe hain taaki AI aur Forecasting ke liye perfect trend mile
+        # 1mo data for AI and Forecasting consistency
         df = yf.download(ticker_name, period="1mo", interval="1d", auto_adjust=True, progress=False)
         return df
     except Exception as e:
@@ -29,8 +29,9 @@ for i, ticker in enumerate(tickers):
         
         if data_df is not None and not data_df.empty:
             try:
-                # Direct safe extraction
-                latest_price = float(data_df['Close'].iloc[-1])
+                # 🛠️ FIX: Safely extracting the exact last price as a single number
+                close_series = data_df['Close'].squeeze()
+                latest_price = float(close_series.iloc[-1])
                 
                 # Currency check
                 symbol = "$" if "USD" in ticker else "₹"
