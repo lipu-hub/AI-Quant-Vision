@@ -65,18 +65,23 @@ elif st.session_state.view == 'grid':
     # Stock List
     stocks = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "TATAMOTORS.NS", "ZOMATO.NS", "BTC-USD", "ETH-USD"]
     cols = st.columns(4)
-    for i, s in enumerate(stocks):
-        df = get_clean_data(s)
-        with cols[i % 4]:
-            if df is not None:
-                curr_p = round(float(df['Close'].iloc[-1]), 2)
-                st.markdown(f'<div class="card"><p style="color:#94a3b8; margin:0;">{s}</p><h2>₹{curr_p}</h2></div>', unsafe_allow_html=True)
-                if st.button(f"Analyze {s.split('.')[0]}", key=s):
-                    st.session_state.selected_stock = s
-                    st.session_state.view = 'detail'
-                    st.rerun()
-            else:
-                st.error(f"Syncing {s}...")
+    # --- Is naye code se replace karein ---
+for i, s in enumerate(stocks):
+    df = get_clean_data(s)
+    with cols[i % 4]:
+        if df is not None:
+            curr_p = round(float(df['Close'].iloc[-1]), 2)
+            
+            # 1. Crypto ke liye $ aur Stocks ke liye ₹ select karne ka logic
+            symbol = "$" if "-USD" in s else "₹"
+            
+            # 2. Sahi symbol ke sath card display karna
+            st.markdown(f'<div class="card"><p style="color:#94a3b8; margin:0;">{s}</p><h2>{symbol}{curr_p}</h2></div>', unsafe_allow_html=True)
+            
+            if st.button(f"Analyze {s.split('.')[0]}", key=s):
+                st.session_state.selected_stock = s
+                st.session_state.view = 'detail'
+                st.rerun()
 
 # PAGE 3: DETAIL VIEW
 elif st.session_state.view == 'detail':
