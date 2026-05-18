@@ -82,7 +82,6 @@ div[data-testid="stVComponentBlock"] > div[style*="border"] {{
 </style>
 """, unsafe_allow_html=True)
 
-# Brand Avatars Config
 def get_brand_avatar(ticker):
     brands = {
         "SUZLON": {"bg": "#0284c7", "txt": "SZ"}, "RVNL": {"bg": "#b91c1c", "txt": "RV"},
@@ -99,9 +98,8 @@ def get_brand_avatar(ticker):
 
 tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Budget Scanner with Quant Indicators (RSI & MACD)")
+st.subheader("Live Budget Scanner with One-Word AI Alerts")
 
-# 📊 MATHEMATICAL QUANT CALCULATIONS (RSI & MACD Engine)
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
     try:
@@ -112,28 +110,20 @@ def fetch_trading_data(ticker_name):
         if not df.empty:
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
-            
-            # 1. 20 EMA Calculation
             df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
-            
-            # 2. RSI Calculation (14 Period)
             delta = df['Close'].diff()
             gain = (delta.where(delta > 0, 0)).ewm(alpha=1/14, adjust=False).mean()
             loss = (-delta.where(delta < 0, 0)).ewm(alpha=1/14, adjust=False).mean()
             rs = gain / (loss + 1e-10)
             df['RSI'] = 100 - (100 / (1 + rs))
-            
-            # 3. MACD Calculation (12, 26, 9)
             exp1 = df['Close'].ewm(span=12, adjust=False).mean()
             exp2 = df['Close'].ewm(span=26, adjust=False).mean()
             df['MACD'] = exp1 - exp2
             df['Signal_Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
-            
             return df
     except:
         return None
 
-# 🚨 AUTO-SCANNER FRAGMENT
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
@@ -154,12 +144,10 @@ for i, ticker in enumerate(tickers):
             clean_name = ticker.replace(".NS", "")
             meta = get_brand_avatar(clean_name)
             
-            # Fetch Current Indicator States
             rsi_val = float(data_df['RSI'].iloc[-1]) if 'RSI' in data_df.columns else 50.0
             macd_val = float(data_df['MACD'].iloc[-1]) if 'MACD' in data_df.columns else 0.0
             sig_val = float(data_df['Signal_Line'].iloc[-1]) if 'Signal_Line' in data_df.columns else 0.0
             
-            # Color Tagging Logic
             rsi_color = "#ef4444" if rsi_val >= 70 else ("#10b981" if rsi_val <= 30 else "#475569")
             rsi_status = "OVERBOUGHT" if rsi_val >= 70 else ("OVERSOLD" if rsi_val <= 30 else "NEUTRAL")
             macd_signal = "🟢 BULLISH" if macd_val > sig_val else "🔴 BEARISH"
@@ -173,7 +161,6 @@ for i, ticker in enumerate(tickers):
                 """, unsafe_allow_html=True)
                 st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
                 
-                # Visual Indicator Tags inside Card
                 st.markdown(f"""
                 <div class="indicator-text">RSI (14): <span style="color:{rsi_color}; font-weight:bold;">{rsi_val:.1f} ({rsi_status})</span></div>
                 <div class="indicator-text">MACD Cross: <span style="font-weight:bold;">{macd_signal}</span></div>
@@ -189,10 +176,16 @@ for i, ticker in enumerate(tickers):
                             try:
                                 recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
                                 ema_now = float(data_df['EMA_20'].iloc[-1])
-                                prompt = (f"Analyze this asset for short term trading: {clean_name}. "
-                                          f"Current Price: {latest_price}, EMA_20: {ema_now:.2f}, "
-                                          f"RSI: {rsi_val:.2f} ({rsi_status}), MACD Signal: {macd_signal}. "
-                                          f"Data: {recent_data}. Check RSI & MACD alignment and provide clear entry, exit targets.")
+                                
+                                # ✨ EXTREMELY AGGRESSIVE ONE-WORD PROMPT
+                                prompt = (
+                                    f"Analyze {clean_name}. Price: {latest_price}, EMA_20: {ema_now:.2f}, RSI: {rsi_val:.2f}, MACD: {macd_signal}.\n"
+                                    f"Data:\n{recent_data}\n\n"
+                                    f"STRICT INSTRUCTIONS:\n"
+                                    f"1. Start your response with exactly ONE line containing only one word in huge markdown font: Either '# 🟢 BUY', '# 🔴 SELL', or '# 🟡 HOLD'.\n"
+                                    f"2. Below that single word line, add a divider '---'.\n"
+                                    f"3. After the divider, give exactly 2 bullet points explaining why (max 15 words per bullet). No other text."
+                                )
                                 model = genai.GenerativeModel('models/gemini-2.5-flash')
                                 st.session_state.ai_analysis_result = model.generate_content(prompt).text
                             except Exception as e:
