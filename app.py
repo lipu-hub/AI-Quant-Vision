@@ -143,7 +143,7 @@ def fetch_trading_data(ticker_name):
         return None
     return None
 
-# 🚨 REAL-TIME LIVE TRADING ALERT ENGINE
+# 🚨 REAL-TIME LIVE TRADING ALERT TRACE ENGINE
 critical_alerts = []
 for tick in tickers:
     t_df = fetch_trading_data(tick)
@@ -151,10 +151,10 @@ for tick in tickers:
         r_val = float(t_df['RSI'].iloc[-1]) if 'RSI' in t_df.columns else 50.0
         c_price = float(t_df['Close'].iloc[-1])
         c_name = tick.replace(".NS", "")
-        if r_val <= 20:
-            critical_alerts.append(f"🔥 **{c_name}** is Super OVERSOLD (RSI: {r_val:.1f}) at ₹{c_price:.2f}! High chance of a bounce back.")
+        if r_val <= 23:  # Optimized tracking window
+            critical_alerts.append(f"🔥 **{c_name}** is Super OVERSOLD (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! Strong setup for sudden BUY bounce.")
         elif r_val >= 70:
-            critical_alerts.append(f"💥 **{c_name}** is Super OVERBOUGHT (RSI: {r_val:.1f}) at ₹{c_price:.2f}! Risk of correction.")
+            critical_alerts.append(f"💥 **{c_name}** is Super OVERBOUGHT (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! High risk zone, look for SELL/SHORT setup.")
 
 @st.fragment(run_every=15)
 def live_alert_scanner(alerts_list):
@@ -162,8 +162,13 @@ def live_alert_scanner(alerts_list):
     if alerts_list:
         for alert in alerts_list:
             st.error(alert)
+            # Browser Toast Injector
+            if "OVERSOLD" in alert:
+                st.toast(f"🎯 Buy Opportunity Alert on asset card!", icon="🔥")
+            else:
+                st.toast(f"⚠️ Profit Booking Alert on asset card!", icon="💥")
     else:
-        st.info("🔄 Scanner active. Real-time Quant risk tracking enabled. No asset breached threshold yet.")
+        st.info("🔄 Scanner active. Real-time Quant risk tracking enabled. Monitoring market entries...")
 
 live_alert_scanner(critical_alerts)
 st.markdown("---")
@@ -188,7 +193,7 @@ for i, ticker in enumerate(tickers):
             
             rsi_color = "#ef4444" if rsi_val >= 70 else ("#10b981" if rsi_val <= 30 else "#475569")
             rsi_status = "OVERBOUGHT" if rsi_val >= 70 else ("OVERSOLD" if rsi_val <= 30 else "NEUTRAL")
-            macd_signal = "BULLISH" if macd_val > sig_val else "BEARISH"
+            macd_signal = "🟢 BULLISH" if macd_val > sig_val else "🔴 BEARISH"
             
             with st.container(border=True):
                 st.markdown(f"""
@@ -222,7 +227,7 @@ for i, ticker in enumerate(tickers):
                                     for n in news_list:
                                         news_text += f"- Title: {n.get('title')} | Summary: {n.get('summary', 'N/A')}\n"
                                 else:
-                                    news_text = "No recent specific stock news found. Evaluate based on general macroeconomic context."
+                                    news_text = "No recent headlines. Evaluate based on general macroeconomic context."
 
                                 prompt = (
                                     f"Analyze {clean_name}.\n"
@@ -237,8 +242,11 @@ for i, ticker in enumerate(tickers):
                                 model = genai.GenerativeModel('models/gemini-2.5-flash')
                                 st.session_state.ai_analysis_result = model.generate_content(prompt).text
                             except Exception as e:
-                                # Fallback automatic strategy generation if quota limits are hit
-                                st.session_state.ai_analysis_result = f"ACTION: {'BUY' if rsi_val <= 30 else 'SELL' if rsi_val >= 70 else 'HOLD'}\n**🎯 Target: {latest_price * 1.02:.2f} | 🛑 Stop-Loss: {latest_price * 0.99:.2f}**\n[🤖 Engine Backup Output due to active AI limit] Technical metrics suggest asset trading at an index value of {rsi_val:.1f}."
+                                # ⚡ AUTOMATIC ENGINE BACKUP (No Failure Mode)
+                                calc_action = 'BUY' if rsi_val <= 30 else ('SELL' if rsi_val >= 70 else 'HOLD')
+                                target_p = latest_price * 1.025 if calc_action == 'BUY' else latest_price * 0.975
+                                sl_p = latest_price * 0.99 if calc_action == 'BUY' else latest_price * 1.01
+                                st.session_state.ai_analysis_result = f"ACTION: {calc_action}\n**🎯 Target: {symbol}{target_p:,.2f} | 🛑 Stop-Loss: {symbol}{sl_p:,.2f}**\n\n[🤖 Terminal Engine Backup Output] Gemini core limit reached. System automatically deployed mathematical fallback. Asset RSI is currently standing at a clear intraday valuation of {rsi_val:.1f} with active {macd_signal} crossover."
                 with btn_col2:
                     if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
                         st.session_state.portfolio[ticker] = {
