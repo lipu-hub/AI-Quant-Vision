@@ -112,9 +112,8 @@ def get_brand_avatar(ticker):
 
 tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Budget Scanner with Real-Time Risk & Portfolio Tracker")
+st.subheader("Live Budget Scanner with Real-Time Risk & News Sentiment Tracker")
 
-# 📊 GLITCH-PROOF MATHEMATICAL ENGINE
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
     try:
@@ -147,7 +146,7 @@ def fetch_trading_data(ticker_name):
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
-    st.info("🔄 Scanner active. Real-time Quant risk metrics enabled.")
+    st.info("🔄 Scanner active. Real-time Quant risk & news tracking enabled.")
 
 live_alert_scanner()
 st.markdown("---")
@@ -194,18 +193,30 @@ for i, ticker in enumerate(tickers):
                     if st.button(f"Scan 🎯", key=f"scan_{ticker}", use_container_width=True):
                         st.session_state.selected_ticker = clean_name
                         st.session_state.ticker_raw_name = ticker
-                        with st.spinner("AI analyzing..."):
+                        with st.spinner("AI analyzing Global News & Quants..."):
                             try:
                                 recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
                                 ema_now = float(data_df['EMA_20'].iloc[-1])
                                 
+                                # 📰 NEW UPGRADE: LIVE NEWS EXTRACTOR
+                                ticker_obj = yf.Ticker(ticker)
+                                news_list = ticker_obj.news[:3]
+                                news_text = ""
+                                if news_list:
+                                    for n in news_list:
+                                        news_text += f"- Title: {n.get('title')} | Summary: {n.get('summary', 'N/A')}\n"
+                                else:
+                                    news_text = "No recent specific stock news found. Evaluate based on general macroeconomic context."
+
                                 prompt = (
-                                    f"Analyze {clean_name}. Current Price: {latest_price}, EMA_20: {ema_now:.2f}, RSI: {rsi_val:.2f}, MACD: {macd_signal}.\n"
-                                    f"Data:\n{recent_data}\n\n"
+                                    f"Analyze {clean_name}.\n"
+                                    f"TECHNICAL DATA:\nPrice: {latest_price}, EMA_20: {ema_now:.2f}, RSI: {rsi_val:.2f}, MACD: {macd_signal}.\n"
+                                    f"Recent Prices:\n{recent_data}\n\n"
+                                    f"LATEST 3 STOCK NEWS HEADLINES:\n{news_text}\n\n"
                                     f"STRICT FORMAT RULES:\n"
                                     f"1. Your first line must be exactly 'ACTION: BUY', 'ACTION: SELL', or 'ACTION: HOLD'.\n"
-                                    f"2. Your second line must provide an exact mathematical target and stop-loss based on support/resistance like this: '**🎯 Target: X | 🛑 Stop-Loss: Y**'.\n"
-                                    f"3. After that, add a short breakdown analysis."
+                                    f"2. Your second line must provide exact target and stop-loss like this: '**🎯 Target: X | 🛑 Stop-Loss: Y**'.\n"
+                                    f"3. In the breakdown below, combine the technical indicators AND the latest news sentiments to justify the move for an intraday player."
                                 )
                                 model = genai.GenerativeModel('models/gemini-2.5-flash')
                                 st.session_state.ai_analysis_result = model.generate_content(prompt).text
@@ -236,7 +247,7 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
             st.plotly_chart(fig, use_container_width=True)
     with signal_col:
         with st.container(border=True):
-            st.markdown("### 🤖 Executable AI Strategy")
+            st.markdown("### 🤖 Executable AI Strategy (News + Quants)")
             
             raw_ai_text = st.session_state.ai_analysis_result
             lines = raw_ai_text.strip().split('\n')
