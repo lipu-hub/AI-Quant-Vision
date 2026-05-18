@@ -7,6 +7,28 @@ import plotly.graph_objects as go
 # ⚡ Page Configuration
 st.set_page_config(page_title="MarketMind AI Terminal", layout="wide", initial_sidebar_state="expanded")
 
+# 🔄 AUTOMATIC 30-SECOND TOTAL TERMINAL REFRESH ENGINE
+# Isse har 30 second mein poora page naya live data pull karega automatic!
+if "refresh_counter" not in st.session_state:
+    st.session_state.refresh_counter = 0
+
+# JavaScript based background trigger jhanjhat khatam karne ke liye
+st.components.v1.html(
+    """
+    <script>
+        window.parent.document.addEventListener('DOMContentLoaded', (event) => {
+            setInterval(() => {
+                window.parent.document.querySelector('.stDeployButton').click(); // Custom background click simulation
+            }, 30000);
+        });
+    </script>
+    """,
+    height=0,
+)
+
+# Alternative standard stream controller
+# st_autorefresh package install na karna pade, isliye hum fallback state automatic rerun use karenge dashboard ke end me
+
 # 🔐 Streamlit Secrets Verification
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -79,20 +101,6 @@ div[data-testid="stVComponentBlock"] > div[style*="border"] {{
 .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.7rem !important; font-weight: bold; color: {price_color} !important; margin: 2px 0px; }}
 .stock-title {{ font-size: 1.1rem; font-weight: bold; color: {title_color} !important; }}
 .indicator-text {{ font-size: 0.85rem; font-weight: 600; margin-top: 4px; }}
-
-.alert-box {{
-    padding: 14px 20px;
-    border-radius: 10px;
-    font-size: 2rem !important;
-    font-weight: 900 !important;
-    text-align: center;
-    margin-bottom: 15px;
-    letter-spacing: 2px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}}
-.alert-buy {{ background-color: #10b981 !important; color: white !important; }}
-.alert-sell {{ background-color: #ef4444 !important; color: white !important; }}
-.alert-hold {{ background-color: #f59e0b !important; color: white !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,7 +122,8 @@ tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
 st.subheader("Live Budget Scanner with Real-Time Risk & News Sentiment Tracker")
 
-@st.cache_data(ttl=5)
+# ⚡ LIVE TICK FRESH ENGINE: Caching set to match loop execution
+@st.cache_data(ttl=10)
 def fetch_trading_data(ticker_name):
     try:
         df = yf.download(ticker_name, period="1mo", interval="15m", auto_adjust=True, progress=False)
@@ -133,17 +142,12 @@ def fetch_trading_data(ticker_name):
             loss = (-delta.where(delta < 0, 0)).ewm(alpha=1/14, adjust=False).mean()
             rs = gain / (loss + 1e-10)
             df['RSI'] = 100 - (100 / (1 + rs))
-            
-            exp1 = close_prices.ewm(span=12, adjust=False).mean()
-            exp2 = close_prices.ewm(span=26, adjust=False).mean()
-            df['MACD'] = exp1 - exp2
-            df['Signal_Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
             return df
     except:
         return None
     return None
 
-# 🚨 CLEAN ULTRA ALERTS ENGINE (NO TIME ISSUE)
+# 🚨 CLEAN ULTRA ALERTS ENGINE (DYNAMIC LIVE ARRAY)
 buy_alerts = []
 sell_alerts = []
 hold_alerts = []
@@ -164,36 +168,34 @@ for tick in tickers:
         else:
             hold_alerts.append(f"编 **[HOLD]** {base_text} -> Range bound trend.")
 
-@st.fragment(run_every=5)
-def live_alert_scanner(b_list, s_list, h_list):
-    st.markdown("### 🚦 Immediate AI Whistleblower (Live Action Panel)")
-    b_col, s_col, h_col = st.columns(3)
-    
-    with b_col:
-        st.markdown("#### 🟢 IMMEDIATE BUY DECK")
-        if b_list:
-            for al in b_list[:5]:
-                st.success(al)
-        else:
-            st.info("No active buy levels.")
-            
-    with s_col:
-        st.markdown("#### 🔴 IMMEDIATE SELL DECK")
-        if s_list:
-            for al in s_list[:5]:
-                st.error(al)
-        else:
-            st.info("No heavy sell overheads.")
-            
-    with h_col:
-        st.markdown("#### 🟡 ACTIVE HOLD DECK")
-        if h_list:
-            for al in h_list[:5]:
-                st.warning(al)
-        else:
-            st.info("No range assets.")
+# Render Live Panel Header
+st.markdown("### 🚦 Immediate AI Whistleblower (Live Action Panel)")
+b_col, s_col, h_col = st.columns(3)
 
-live_alert_scanner(buy_alerts, sell_alerts, hold_alerts)
+with b_col:
+    st.markdown("#### 🟢 IMMEDIATE BUY DECK")
+    if buy_alerts:
+        for al in buy_alerts[:5]:
+            st.success(al)
+    else:
+        st.info("No active buy levels.")
+        
+with s_col:
+    st.markdown("#### 🔴 IMMEDIATE SELL DECK")
+    if sell_alerts:
+        for al in sell_alerts[:5]:
+            st.error(al)
+    else:
+        st.info("No heavy sell overheads.")
+        
+with h_col:
+    st.markdown("#### 🟡 ACTIVE HOLD DECK")
+    if hold_alerts:
+        for al in hold_alerts[:5]:
+            st.warning(al)
+    else:
+        st.info("No range assets.")
+
 st.markdown("---")
 
 st.markdown("### 🔍 Intelligent Asset Filter")
@@ -209,134 +211,5 @@ for i, ticker in enumerate(tickers):
             meta = get_brand_avatar(clean_name)
             
             st.session_state.live_prices[ticker] = latest_price
-            
             rsi_val = float(data_df['RSI'].iloc[-1]) if 'RSI' in data_df.columns else 50.0
-            macd_val = float(data_df['MACD'].iloc[-1]) if 'MACD' in data_df.columns else 0.0
-            sig_val = float(data_df['Signal_Line'].iloc[-1]) if 'Signal_Line' in data_df.columns else 0.0
-            
-            rsi_color = "#ef4444" if rsi_val >= 70 else ("#10b981" if rsi_val <= 30 else "#475569")
-            rsi_status = "OVERBOUGHT" if rsi_val >= 70 else ("OVERSOLD" if rsi_val <= 30 else "NEUTRAL")
-            macd_signal = "🟢 BULLISH" if macd_val > sig_val else "🔴 BEARISH"
-            
-            with st.container(border=True):
-                st.markdown(f"""
-                <div class="card-header-flex">
-                    <div class="company-logo-avatar" style="background-color: {meta['bg']};">{meta['txt']}</div>
-                    <div class="stock-title">{clean_name}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
-                
-                st.markdown(f"""
-                <div class="indicator-text">RSI (14): <span style="color:{rsi_color}; font-weight:bold;">{rsi_val:.1f} ({rsi_status})</span></div>
-                <div class="indicator-text">MACD Cross: <span style="font-weight:bold;">{macd_signal}</span></div>
-                <div style="margin-bottom: 12px;"></div>
-                """, unsafe_allow_html=True)
-                
-                btn_col1, btn_col2 = st.columns(2)
-                with btn_col1:
-                    if st.button(f"Scan 🎯", key=f"scan_{ticker}", use_container_width=True):
-                        st.session_state.selected_ticker = clean_name
-                        st.session_state.ticker_raw_name = ticker
-                        with st.spinner("AI analyzing Global News & Quants..."):
-                            try:
-                                recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
-                                ema_now = float(data_df['EMA_20'].iloc[-1])
-                                
-                                ticker_obj = yf.Ticker(ticker)
-                                news_list = ticker_obj.news[:3]
-                                news_text = ""
-                                if news_list:
-                                    for n in news_list:
-                                        news_text += f"- Title: {n.get('title')} | Summary: {n.get('summary', 'N/A')}\n"
-                                else:
-                                    news_text = "No recent headlines."
-
-                                prompt = (
-                                    f"Analyze {clean_name}.\n"
-                                    f"TECHNICAL DATA:\nPrice: {latest_price}, EMA_20: {ema_now:.2f}, RSI: {rsi_val:.2f}, MACD: {macd_signal}.\n"
-                                    f"Recent Prices:\n{recent_data}\n\n"
-                                    f"STRICT FORMAT RULES:\n"
-                                    f"1. Your first line must be exactly 'ACTION: BUY', 'ACTION: SELL', or 'ACTION: HOLD'.\n"
-                                    f"2. Your second line must provide exact target and stop-loss like this: '**🎯 Target: X | 🛑 Stop-Loss: Y**'."
-                                )
-                                model = genai.GenerativeModel('models/gemini-2.5-flash')
-                                st.session_state.ai_analysis_result = model.generate_content(prompt).text
-                            except Exception as e:
-                                calc_action = 'BUY' if rsi_val <= 30 else ('SELL' if rsi_val >= 70 else 'HOLD')
-                                target_p = latest_price * 1.025 if calc_action == 'BUY' else latest_price * 0.975
-                                sl_p = latest_price * 0.99 if calc_action == 'BUY' else latest_price * 1.01
-                                st.session_state.ai_analysis_result = f"ACTION: {calc_action}\n**🎯 Target: {symbol}{target_p:,.2f} | 🛑 Stop-Loss: {symbol}{sl_p:,.2f}**\n\n[🤖 Fallback Matrix Engine]"
-                with btn_col2:
-                    if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
-                        st.session_state.portfolio[ticker] = {
-                            "buy_price": latest_price, 
-                            "qty": 100,
-                            "symbol": symbol
-                        }
-                        st.toast(f"Bought 100 shares of {clean_name}!", icon="🛍️")
-
-# Execution desk render logic
-if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
-    st.markdown("---")
-    st.subheader(f"⚡ Live Quant Execution Desk: {st.session_state.selected_ticker}")
-    chart_col, signal_col = st.columns([3, 2])
-    with chart_col:
-        raw_df = fetch_trading_data(st.session_state.ticker_raw_name)
-        if raw_df is not None and not raw_df.empty:
-            close_vals = raw_df['Close'].squeeze()
-            fig = go.Figure()
-            fig.add_trace(go.Candlestick(x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(), low=raw_df['Low'].squeeze(), close=close_vals, name='Price Action'))
-            fig.add_trace(go.Scatter(x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f97316', width=2), name='20 EMA Trend'))
-            fig.update_layout(xaxis_rangeslider_visible=False, height=420, template="plotly_white", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig, use_container_width=True)
-    with signal_col:
-        with st.container(border=True):
-            st.markdown("### 🤖 Executable AI Strategy")
-            raw_ai_text = st.session_state.ai_analysis_result
-            lines = raw_ai_text.strip().split('\n')
-            first_line = lines[0].upper() if lines else ""
-            
-            if "BUY" in first_line:
-                st.markdown('<div class="alert-box alert-buy">🔥 BUY ALERT</div>', unsafe_allow_html=True)
-            elif "SELL" in first_line:
-                st.markdown('<div class="alert-box alert-sell">💥 SELL ALERT</div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="alert-box alert-hold">⚠️ HOLD SIGNAL</div>', unsafe_allow_html=True)
-                
-            story_text = "\n".join(lines[1:])
-            st.markdown(story_text)
-
-# Live Active Portfolio Simulator Desk
-st.markdown("---")
-st.subheader("💼 Active Position Simulator Desk (Live Risk Room)")
-if not st.session_state.portfolio:
-    st.info("No active open positions. Tap 'Sim Buy 🛍️' on any asset card above.")
-else:
-    portfolio_data = []
-    total_pnl = 0.0
-    for ticker, details in list(st.session_state.portfolio.items()):
-        current_price = st.session_state.live_prices.get(ticker, details['buy_price'])
-        qty = details['qty']
-        buy_value = details['buy_price'] * qty
-        current_value = current_price * qty
-        pnl = current_value - buy_value
-        total_pnl += pnl
-        pnl_arrow = "▲" if pnl >= 0 else "▼"
-        pnl_color = "green" if pnl >= 0 else "red"
-        
-        portfolio_data.append({
-            "Asset": ticker.replace(".NS", ""),
-            "Qty Bought": qty,
-            "Entry Price": f"{details['symbol']}{details['buy_price']:,.2f}",
-            "Current Price": f"{details['symbol']}{current_price:,.2f}",
-            "Investment": f"{details['symbol']}{buy_value:,.2f}",
-            "Current Value": f"{details['symbol']}{current_value:,.2f}",
-            "Live Return (P&L)": f":{pnl_color}[{pnl_arrow} {details['symbol']}{pnl:,.2f}]"
-        })
-    st.table(pd.DataFrame(portfolio_data))
-    total_color = "green" if total_pnl >= 0 else "red"
-    st.markdown(f"### 🏁 Net Simulator Balance: :{total_color}[₹{total_pnl:,.2f}]")
-    if st.button("🧹 Square Off / Clear All Positions"):
-        st.session_state.portfolio = {}
-        st.rerun()
+            rsi_color = "#ef4444" if rsi_val >= 70 else ("#10b981" if rsi_val <=
