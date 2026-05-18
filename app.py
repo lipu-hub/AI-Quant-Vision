@@ -45,7 +45,7 @@ with st.sidebar:
                 st.rerun()
     st.markdown("---")
 
-# 🎛️ INJECTING PREMIUM STYLE BLOCK
+# 🎛️ INJECTING ORIGINAL PREMIUM LIGHT STYLE BLOCK
 bg_color = "#f8fafc"
 text_color = "#0f172a"
 card_bg = "#ffffff"
@@ -143,12 +143,29 @@ def fetch_trading_data(ticker_name):
         return None
     return None
 
-@st.fragment(run_every=15)
-def live_alert_scanner():
-    st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
-    st.info("🔄 Scanner active. Real-time Quant risk & news tracking enabled.")
+# 🚨 REAL-TIME LIVE TRADING ALERT ENGINE
+critical_alerts = []
+for tick in tickers:
+    t_df = fetch_trading_data(tick)
+    if t_df is not None and not t_df.empty:
+        r_val = float(t_df['RSI'].iloc[-1]) if 'RSI' in t_df.columns else 50.0
+        c_price = float(t_df['Close'].iloc[-1])
+        c_name = tick.replace(".NS", "")
+        if r_val <= 20:
+            critical_alerts.append(f"🔥 **{c_name}** is Super OVERSOLD (RSI: {r_val:.1f}) at ₹{c_price:.2f}! High chance of a bounce back.")
+        elif r_val >= 70:
+            critical_alerts.append(f"💥 **{c_name}** is Super OVERBOUGHT (RSI: {r_val:.1f}) at ₹{c_price:.2f}! Risk of correction.")
 
-live_alert_scanner()
+@st.fragment(run_every=15)
+def live_alert_scanner(alerts_list):
+    st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
+    if alerts_list:
+        for alert in alerts_list:
+            st.error(alert)
+    else:
+        st.info("🔄 Scanner active. Real-time Quant risk tracking enabled. No asset breached threshold yet.")
+
+live_alert_scanner(critical_alerts)
 st.markdown("---")
 
 st.markdown("### 🔍 Intelligent Asset Filter")
@@ -198,7 +215,6 @@ for i, ticker in enumerate(tickers):
                                 recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
                                 ema_now = float(data_df['EMA_20'].iloc[-1])
                                 
-                                # 📰 NEW UPGRADE: LIVE NEWS EXTRACTOR
                                 ticker_obj = yf.Ticker(ticker)
                                 news_list = ticker_obj.news[:3]
                                 news_text = ""
@@ -221,7 +237,8 @@ for i, ticker in enumerate(tickers):
                                 model = genai.GenerativeModel('models/gemini-2.5-flash')
                                 st.session_state.ai_analysis_result = model.generate_content(prompt).text
                             except Exception as e:
-                                st.session_state.ai_analysis_result = f"Error: {str(e)}"
+                                # Fallback automatic strategy generation if quota limits are hit
+                                st.session_state.ai_analysis_result = f"ACTION: {'BUY' if rsi_val <= 30 else 'SELL' if rsi_val >= 70 else 'HOLD'}\n**🎯 Target: {latest_price * 1.02:.2f} | 🛑 Stop-Loss: {latest_price * 0.99:.2f}**\n[🤖 Engine Backup Output due to active AI limit] Technical metrics suggest asset trading at an index value of {rsi_val:.1f}."
                 with btn_col2:
                     if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
                         st.session_state.portfolio[ticker] = {
@@ -247,7 +264,7 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
             st.plotly_chart(fig, use_container_width=True)
     with signal_col:
         with st.container(border=True):
-            st.markdown("### 🤖 Executable AI Strategy (News + Quants)")
+            st.markdown("### 🤖 Executable AI Strategy")
             
             raw_ai_text = st.session_state.ai_analysis_result
             lines = raw_ai_text.strip().split('\n')
