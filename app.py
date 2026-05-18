@@ -8,26 +8,18 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="MarketMind AI Terminal", layout="wide", initial_sidebar_state="expanded")
 
 # 🔄 AUTOMATIC 30-SECOND TOTAL TERMINAL REFRESH ENGINE
-# Isse har 30 second mein poora page naya live data pull karega automatic!
 if "refresh_counter" not in st.session_state:
     st.session_state.refresh_counter = 0
 
-# JavaScript based background trigger jhanjhat khatam karne ke liye
-st.components.v1.html(
-    """
-    <script>
-        window.parent.document.addEventListener('DOMContentLoaded', (event) => {
-            setInterval(() => {
-                window.parent.document.querySelector('.stDeployButton').click(); // Custom background click simulation
-            }, 30000);
-        });
-    </script>
-    """,
-    height=0,
-)
-
-# Alternative standard stream controller
-# st_autorefresh package install na karna pade, isliye hum fallback state automatic rerun use karenge dashboard ke end me
+st.components.v1.html("""
+<script>
+    window.parent.document.addEventListener('DOMContentLoaded', (event) => {
+        setInterval(() => {
+            window.parent.document.querySelector('.stDeployButton').click();
+        }, 30000);
+    });
+</script>
+""", height=0)
 
 # 🔐 Streamlit Secrets Verification
 if "GEMINI_API_KEY" in st.secrets:
@@ -54,17 +46,13 @@ if "custom_tickers" not in st.session_state:
         "SJVN.NS", "SAIL.NS", "ETH-USD"
     ]
 
-# ⚙️ CORE ADMIN CONSOLE IN SIDEBAR
+# 🎛️ NAVIGATION CONTROLLER (MULTIPAGE INTERACTIVE UI)
 with st.sidebar:
-    st.markdown("## ⚙️ Core Admin Console")
-    admin_pin = st.text_input("Enter Admin Master Pin:", type="password")
-    if admin_pin == "777":
-        st.success("🔓 Admin Access Granted!")
-        new_ticker = st.text_input("Add Ticker Name (e.g., RELIANCE.NS):").upper().strip()
-        if st.button("➕ Inject Asset"):
-            if new_ticker and new_ticker not in st.session_state.custom_tickers:
-                st.session_state.custom_tickers.append(new_ticker)
-                st.rerun()
+    st.markdown("## 🧭 Terminal Navigation")
+    page = st.radio(
+        "Select Workspace View:",
+        ["🎯 Live Whistleblower", "💼 My Risk Portfolio", "⚙️ Core Admin Console"]
+    )
     st.markdown("---")
 
 # 🎛️ INJECTING ORIGINAL PREMIUM LIGHT STYLE BLOCK
@@ -118,11 +106,6 @@ def get_brand_avatar(ticker):
     }
     return brands.get(ticker, {"bg": "#475569", "txt": "ST"})
 
-tickers = st.session_state.custom_tickers
-st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Budget Scanner with Real-Time Risk & News Sentiment Tracker")
-
-# ⚡ LIVE TICK FRESH ENGINE: Caching set to match loop execution
 @st.cache_data(ttl=10)
 def fetch_trading_data(ticker_name):
     try:
@@ -147,69 +130,64 @@ def fetch_trading_data(ticker_name):
         return None
     return None
 
-# 🚨 CLEAN ULTRA ALERTS ENGINE (DYNAMIC LIVE ARRAY)
-buy_alerts = []
-sell_alerts = []
-hold_alerts = []
+tickers = st.session_state.custom_tickers
 
-for tick in tickers:
-    t_df = fetch_trading_data(tick)
-    if t_df is not None and not t_df.empty:
-        r_val = float(t_df['RSI'].iloc[-1]) if 'RSI' in t_df.columns else 50.0
-        c_price = float(t_df['Close'].iloc[-1])
-        c_name = tick.replace(".NS", "")
-        
-        base_text = f"**{c_name}** at ₹{c_price:,.2f} (RSI: {r_val:.1f})"
-        
-        if r_val <= 30:
-            buy_alerts.append(f"🟢 **[BUY]** {base_text} -> Strong bounce setup!")
-        elif r_val >= 65:
-            sell_alerts.append(f"🔴 **[SELL]** {base_text} -> Profit booking zone.")
-        else:
-            hold_alerts.append(f"编 **[HOLD]** {base_text} -> Range bound trend.")
+# ==========================================
+# PAGE 1: LIVE WHISTLEBLOWER PANEL
+# ==========================================
+if page == "🎯 Live Whistleblower":
+    st.title("🚀 MarketMind AI Trading Terminal")
+    st.subheader("Live Budget Scanner with Real-Time Risk & News Sentiment Tracker")
 
-# Render Live Panel Header
-st.markdown("### 🚦 Immediate AI Whistleblower (Live Action Panel)")
-b_col, s_col, h_col = st.columns(3)
+    buy_alerts, sell_alerts, hold_alerts = [], [], []
 
-with b_col:
-    st.markdown("#### 🟢 IMMEDIATE BUY DECK")
-    if buy_alerts:
-        for al in buy_alerts[:5]:
-            st.success(al)
-    else:
-        st.info("No active buy levels.")
-        
-with s_col:
-    st.markdown("#### 🔴 IMMEDIATE SELL DECK")
-    if sell_alerts:
-        for al in sell_alerts[:5]:
-            st.error(al)
-    else:
-        st.info("No heavy sell overheads.")
-        
-with h_col:
-    st.markdown("#### 🟡 ACTIVE HOLD DECK")
-    if hold_alerts:
-        for al in hold_alerts[:5]:
-            st.warning(al)
-    else:
-        st.info("No range assets.")
-
-st.markdown("---")
-
-st.markdown("### 🔍 Intelligent Asset Filter")
-cols = st.columns(4)
-for i, ticker in enumerate(tickers):
-    with cols[i % 4]:
-        data_df = fetch_trading_data(ticker)
-        if data_df is not None and not data_df.empty:
-            close_series = data_df['Close'].squeeze()
-            latest_price = float(close_series.iloc[-1])
-            symbol = "$" if "USD" in ticker else "₹"
-            clean_name = ticker.replace(".NS", "")
-            meta = get_brand_avatar(clean_name)
+    for tick in tickers:
+        t_df = fetch_trading_data(tick)
+        if t_df is not None and not t_df.empty:
+            r_val = float(t_df['RSI'].iloc[-1]) if 'RSI' in t_df.columns else 50.0
+            c_price = float(t_df['Close'].iloc[-1])
+            c_name = tick.replace(".NS", "")
+            base_text = f"**{c_name}** at ₹{c_price:,.2f} (RSI: {r_val:.1f})"
             
-            st.session_state.live_prices[ticker] = latest_price
-            rsi_val = float(data_df['RSI'].iloc[-1]) if 'RSI' in data_df.columns else 50.0
-            rsi_color = "#ef4444" if rsi_val >= 70 else ("#10b981" if rsi_val <=
+            if r_val <= 30:
+                buy_alerts.append(f"🟢 **[BUY]** {base_text} -> Strong bounce setup!")
+            elif r_val >= 65:
+                sell_alerts.append(f"🔴 **[SELL]** {base_text} -> Profit booking zone.")
+            else:
+                hold_alerts.append(f"⚠️ **[HOLD]** {base_text} -> Range bound trend.")
+
+    st.markdown("### 🚦 Immediate AI Whistleblower (Live Action Panel)")
+    b_col, s_col, h_col = st.columns(3)
+    with b_col:
+        st.markdown("#### 🟢 IMMEDIATE BUY DECK")
+        if buy_alerts:
+            for al in buy_alerts[:5]: st.success(al)
+        else: st.info("No active buy levels.")
+    with s_col:
+        st.markdown("#### 🔴 IMMEDIATE SELL DECK")
+        if sell_alerts:
+            for al in sell_alerts[:5]: st.error(al)
+        else: st.info("No heavy sell overheads.")
+    with h_col:
+        st.markdown("#### 🟡 ACTIVE HOLD DECK")
+        if hold_alerts:
+            for al in hold_alerts[:5]: st.warning(al)
+        else: st.info("No range assets.")
+
+    st.markdown("---")
+    st.markdown("### 🔍 Intelligent Asset Filter")
+    cols = st.columns(4)
+    for i, ticker in enumerate(tickers):
+        with cols[i % 4]:
+            data_df = fetch_trading_data(ticker)
+            if data_df is not None and not data_df.empty:
+                close_series = data_df['Close'].squeeze()
+                latest_price = float(close_series.iloc[-1])
+                symbol = "$" if "USD" in ticker else "₹"
+                clean_name = ticker.replace(".NS", "")
+                meta = get_brand_avatar(clean_name)
+                
+                st.session_state.live_prices[ticker] = latest_price
+                rsi_val = float(data_df['RSI'].iloc[-1]) if 'RSI' in data_df.columns else 50.0
+                rsi_color = "#ef4444" if rsi_val >= 70 else ("#10b981" if rsi_val <= 30 else "#475569")
+                rsi_status = "OVERBOUGHT" if rsi_val >= 70 else ("OVERSOLD" if rsi_val <= 30 else "NEUTRAL")
