@@ -78,59 +78,66 @@ div[data-testid="stVComponentBlock"] > div[style*="border"] {{
 }}
 .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.7rem !important; font-weight: bold; color: {price_color} !important; margin: 2px 0px; }}
 .stock-title {{ font-size: 1.1rem; font-weight: bold; color: {title_color} !important; }}
+.indicator-text {{ font-size: 0.85rem; font-weight: 600; margin-top: 4px; }}
 </style>
 """, unsafe_allow_html=True)
 
-# ✨ ROCK-SOLID FIX: Custom premium brand color-coded avatars that bypass all blocking blocks
+# Brand Avatars Config
 def get_brand_avatar(ticker):
     brands = {
-        "SUZLON": {"bg": "#0284c7", "txt": "SZ"}, # Sky Blue
-        "RVNL": {"bg": "#b91c1c", "txt": "RV"},   # Rail Red
-        "NBCC": {"bg": "#0f766e", "txt": "NB"},   # Teal Build
-        "GAIL": {"bg": "#15803d", "txt": "GL"},   # Gas Green
-        "IRFC": {"bg": "#1e3a8a", "txt": "IF"},   # Navy Finance
-        "IDEA": {"bg": "#e11d48", "txt": "VI"},   # Vi Red
-        "TATAPOWER": {"bg": "#0369a1", "txt": "TP"},# Tata Blue
-        "HUDCO": {"bg": "#4d7c0f", "txt": "HD"},  # Olive
-        "IFCI": {"bg": "#6d28d9", "txt": "IF"},   # Purple
-        "YESBANK": {"bg": "#2563eb", "txt": "YB"},# Yes Blue
-        "NHPC": {"bg": "#0369a1", "txt": "NH"},   # Hydro Blue
-        "IOC": {"bg": "#ea580c", "txt": "IO"},    # Orange
-        "PNB": {"bg": "#991b1b", "txt": "PB"},    # Punjab Maroon
-        "JPPOWER": {"bg": "#d97706", "txt": "JP"},# Amber
-        "SJVN": {"bg": "#475569", "txt": "SJ"},   # Slate
-        "SAIL": {"bg": "#1e40af", "txt": "SL"},   # Steel Blue
-        "BTC-USD": {"bg": "#f59e0b", "txt": "₿"}, # Bitcoin Gold
-        "ETH-USD": {"bg": "#6366f1", "txt": "Ξ"}  # Ethereum Purple
+        "SUZLON": {"bg": "#0284c7", "txt": "SZ"}, "RVNL": {"bg": "#b91c1c", "txt": "RV"},
+        "NBCC": {"bg": "#0f766e", "txt": "NB"}, "GAIL": {"bg": "#15803d", "txt": "GL"},
+        "IRFC": {"bg": "#1e3a8a", "txt": "IF"}, "IDEA": {"bg": "#e11d48", "txt": "VI"},
+        "TATAPOWER": {"bg": "#0369a1", "txt": "TP"}, "HUDCO": {"bg": "#4d7c0f", "txt": "HD"},
+        "IFCI": {"bg": "#6d28d9", "txt": "IF"}, "YESBANK": {"bg": "#2563eb", "txt": "YB"},
+        "NHPC": {"bg": "#0369a1", "txt": "NH"}, "IOC": {"bg": "#ea580c", "txt": "IO"},
+        "PNB": {"bg": "#991b1b", "txt": "PB"}, "JPPOWER": {"bg": "#d97706", "txt": "JP"},
+        "SJVN": {"bg": "#475569", "txt": "SJ"}, "SAIL": {"bg": "#1e40af", "txt": "SL"},
+        "BTC-USD": {"bg": "#f59e0b", "txt": "₿"}, "ETH-USD": {"bg": "#6366f1", "txt": "Ξ"}
     }
     return brands.get(ticker, {"bg": "#475569", "txt": "ST"})
 
 tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Budget Scanner with Real Brand Engine Logos")
+st.subheader("Live Budget Scanner with Quant Indicators (RSI & MACD)")
 
+# 📊 MATHEMATICAL QUANT CALCULATIONS (RSI & MACD Engine)
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
     try:
         df = yf.download(ticker_name, period="1mo", interval="15m", auto_adjust=True, progress=False)
         if df.empty:
             df = yf.download(ticker_name, period="1mo", interval="1d", auto_adjust=True, progress=False)
+        
         if not df.empty:
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
+            
+            # 1. 20 EMA Calculation
             df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
+            
+            # 2. RSI Calculation (14 Period)
+            delta = df['Close'].diff()
+            gain = (delta.where(delta > 0, 0)).ewm(alpha=1/14, adjust=False).mean()
+            loss = (-delta.where(delta < 0, 0)).ewm(alpha=1/14, adjust=False).mean()
+            rs = gain / (loss + 1e-10)
+            df['RSI'] = 100 - (100 / (1 + rs))
+            
+            # 3. MACD Calculation (12, 26, 9)
+            exp1 = df['Close'].ewm(span=12, adjust=False).mean()
+            exp2 = df['Close'].ewm(span=26, adjust=False).mean()
+            df['MACD'] = exp1 - exp2
+            df['Signal_Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
+            
             return df
     except:
         return None
 
-# 🚨 AUTO-SCANNER BASELINE
+# 🚨 AUTO-SCANNER FRAGMENT
 @st.fragment(run_every=15)
 def live_alert_scanner():
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
-    for ticker in tickers:
-        if ticker not in st.session_state.live_prices:
-            st.session_state.live_prices[ticker] = {"price": 0.0, "status": "STABLE"}
-    st.info("🔄 Scanner active. Real-time baselines monitoring enabled.")
+    st.info("🔄 Scanner active. Real-time Quant indicators monitoring enabled.")
 
 live_alert_scanner()
 st.markdown("---")
@@ -147,6 +154,16 @@ for i, ticker in enumerate(tickers):
             clean_name = ticker.replace(".NS", "")
             meta = get_brand_avatar(clean_name)
             
+            # Fetch Current Indicator States
+            rsi_val = float(data_df['RSI'].iloc[-1]) if 'RSI' in data_df.columns else 50.0
+            macd_val = float(data_df['MACD'].iloc[-1]) if 'MACD' in data_df.columns else 0.0
+            sig_val = float(data_df['Signal_Line'].iloc[-1]) if 'Signal_Line' in data_df.columns else 0.0
+            
+            # Color Tagging Logic
+            rsi_color = "#ef4444" if rsi_val >= 70 else ("#10b981" if rsi_val <= 30 else "#475569")
+            rsi_status = "OVERBOUGHT" if rsi_val >= 70 else ("OVERSOLD" if rsi_val <= 30 else "NEUTRAL")
+            macd_signal = "🟢 BULLISH" if macd_val > sig_val else "🔴 BEARISH"
+            
             with st.container(border=True):
                 st.markdown(f"""
                 <div class="card-header-flex">
@@ -155,6 +172,13 @@ for i, ticker in enumerate(tickers):
                 </div>
                 """, unsafe_allow_html=True)
                 st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
+                
+                # Visual Indicator Tags inside Card
+                st.markdown(f"""
+                <div class="indicator-text">RSI (14): <span style="color:{rsi_color}; font-weight:bold;">{rsi_val:.1f} ({rsi_status})</span></div>
+                <div class="indicator-text">MACD Cross: <span style="font-weight:bold;">{macd_signal}</span></div>
+                <div style="margin-bottom: 12px;"></div>
+                """, unsafe_allow_html=True)
                 
                 btn_col1, btn_col2 = st.columns(2)
                 with btn_col1:
@@ -165,7 +189,10 @@ for i, ticker in enumerate(tickers):
                             try:
                                 recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
                                 ema_now = float(data_df['EMA_20'].iloc[-1])
-                                prompt = f"Analyze this asset for short term trading: {clean_name}. Current Price: {latest_price}, EMA_20: {ema_now:.2f}. Data: {recent_data}. Provide clear buy/sell signal and entry zones."
+                                prompt = (f"Analyze this asset for short term trading: {clean_name}. "
+                                          f"Current Price: {latest_price}, EMA_20: {ema_now:.2f}, "
+                                          f"RSI: {rsi_val:.2f} ({rsi_status}), MACD Signal: {macd_signal}. "
+                                          f"Data: {recent_data}. Check RSI & MACD alignment and provide clear entry, exit targets.")
                                 model = genai.GenerativeModel('models/gemini-2.5-flash')
                                 st.session_state.ai_analysis_result = model.generate_content(prompt).text
                             except Exception as e:
