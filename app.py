@@ -3,7 +3,8 @@ import yfinance as yf
 import pandas as pd
 import google.generativeai as genai
 import plotly.graph_objects as go
-from datetime import datetime  # 📅 Time stamp engine import kiya
+from datetime import datetime
+import pytz  # 🌍 IST Timezone handle karne ke liye import kiya
 
 # ⚡ Page Configuration
 st.set_page_config(page_title="MarketMind AI Terminal", layout="wide", initial_sidebar_state="expanded")
@@ -144,20 +145,24 @@ def fetch_trading_data(ticker_name):
         return None
     return None
 
-# 🚨 REAL-TIME LIVE TRADING ALERT TRACE ENGINE WITH TIMESTAMP
+# 🚨 REAL-TIME LIVE TRADING ALERT TRACE ENGINE WITH PURE INDIAN STANDARD TIME (IST)
 critical_alerts = []
+ist_timezone = pytz.timezone('Asia/Kolkata')  # 🇮🇳 IST Zone Lock Kiya
+
 for tick in tickers:
     t_df = fetch_trading_data(tick)
     if t_df is not None and not t_df.empty:
         r_val = float(t_df['RSI'].iloc[-1]) if 'RSI' in t_df.columns else 50.0
         c_price = float(t_df['Close'].iloc[-1])
         c_name = tick.replace(".NS", "")
-        current_time = datetime.now().strftime("%H:%M:%S")  # 🕐 Real-time clock formatted
+        
+        # Exact Indian Time Capture
+        current_time_ist = datetime.now(ist_timezone).strftime("%I:%M:%S %p")
         
         if r_val <= 23:
-            critical_alerts.append(f"⏰ **[{current_time}]** 🔥 **{c_name}** is Super OVERSOLD (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! Strong setup for sudden BUY bounce.")
+            critical_alerts.append(f"⏰ **[{current_time_ist} IST]** 🔥 **{c_name}** is Super OVERSOLD (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! Strong setup for sudden BUY bounce.")
         elif r_val >= 70:
-            critical_alerts.append(f"⏰ **[{current_time}]** 💥 **{c_name}** is Super OVERBOUGHT (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! High risk zone, look for SELL/SHORT setup.")
+            critical_alerts.append(f"⏰ **[{current_time_ist} IST]** 💥 **{c_name}** is Super OVERBOUGHT (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! High risk zone, look for SELL/SHORT setup.")
 
 @st.fragment(run_every=15)
 def live_alert_scanner(alerts_list):
@@ -189,74 +194,4 @@ for i, ticker in enumerate(tickers):
             
             st.session_state.live_prices[ticker] = latest_price
             
-            rsi_val = float(data_df['RSI'].iloc[-1]) if 'RSI' in data_df.columns else 50.0
-            macd_val = float(data_df['MACD'].iloc[-1]) if 'MACD' in data_df.columns else 0.0
-            sig_val = float(data_df['Signal_Line'].iloc[-1]) if 'Signal_Line' in data_df.columns else 0.0
-            
-            rsi_color = "#ef4444" if rsi_val >= 70 else ("#10b981" if rsi_val <= 30 else "#475569")
-            rsi_status = "OVERBOUGHT" if rsi_val >= 70 else ("OVERSOLD" if rsi_val <= 30 else "NEUTRAL")
-            macd_signal = "🟢 BULLISH" if macd_val > sig_val else "🔴 BEARISH"
-            
-            with st.container(border=True):
-                st.markdown(f"""
-                <div class="card-header-flex">
-                    <div class="company-logo-avatar" style="background-color: {meta['bg']};">{meta['txt']}</div>
-                    <div class="stock-title">{clean_name}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
-                
-                st.markdown(f"""
-                <div class="indicator-text">RSI (14): <span style="color:{rsi_color}; font-weight:bold;">{rsi_val:.1f} ({rsi_status})</span></div>
-                <div class="indicator-text">MACD Cross: <span style="font-weight:bold;">{macd_signal}</span></div>
-                <div style="margin-bottom: 12px;"></div>
-                """, unsafe_allow_html=True)
-                
-                btn_col1, btn_col2 = st.columns(2)
-                with btn_col1:
-                    if st.button(f"Scan 🎯", key=f"scan_{ticker}", use_container_width=True):
-                        st.session_state.selected_ticker = clean_name
-                        st.session_state.ticker_raw_name = ticker
-                        with st.spinner("AI analyzing Global News & Quants..."):
-                            try:
-                                recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
-                                ema_now = float(data_df['EMA_20'].iloc[-1])
-                                
-                                ticker_obj = yf.Ticker(ticker)
-                                news_list = ticker_obj.news[:3]
-                                news_text = ""
-                                if news_list:
-                                    for n in news_list:
-                                        news_text += f"- Title: {n.get('title')} | Summary: {n.get('summary', 'N/A')}\n"
-                                else:
-                                    news_text = "No recent headlines. Evaluate based on general macroeconomic context."
-
-                                prompt = (
-                                    f"Analyze {clean_name}.\n"
-                                    f"TECHNICAL DATA:\nPrice: {latest_price}, EMA_20: {ema_now:.2f}, RSI: {rsi_val:.2f}, MACD: {macd_signal}.\n"
-                                    f"Recent Prices:\n{recent_data}\n\n"
-                                    f"LATEST 3 STOCK NEWS HEADLINES:\n{news_text}\n\n"
-                                    f"STRICT FORMAT RULES:\n"
-                                    f"1. Your first line must be exactly 'ACTION: BUY', 'ACTION: SELL', or 'ACTION: HOLD'.\n"
-                                    f"2. Your second line must provide exact target and stop-loss like this: '**🎯 Target: X | 🛑 Stop-Loss: Y**'.\n"
-                                    f"3. In the breakdown below, combine the technical indicators AND the latest news sentiments to justify the move for an intraday player."
-                                )
-                                model = genai.GenerativeModel('models/gemini-2.5-flash')
-                                st.session_state.ai_analysis_result = model.generate_content(prompt).text
-                            except Exception as e:
-                                calc_action = 'BUY' if rsi_val <= 30 else ('SELL' if rsi_val >= 70 else 'HOLD')
-                                target_p = latest_price * 1.025 if calc_action == 'BUY' else latest_price * 0.975
-                                sl_p = latest_price * 0.99 if calc_action == 'BUY' else latest_price * 1.01
-                                st.session_state.ai_analysis_result = f"ACTION: {calc_action}\n**🎯 Target: {symbol}{target_p:,.2f} | 🛑 Stop-Loss: {symbol}{sl_p:,.2f}**\n\n[🤖 Terminal Engine Backup Output] Gemini core limit reached. Fallback triggered at {datetime.now().strftime('%H:%M:%S')}. RSI is {rsi_val:.1f} with active {macd_signal} setup."
-                with btn_col2:
-                    if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
-                        st.session_state.portfolio[ticker] = {
-                            "buy_price": latest_price, 
-                            "qty": 100,
-                            "symbol": symbol
-                        }
-                        st.toast(f"Bought 100 shares of {clean_name}!", icon="🛍️")
-
-# Execution desk render logic
-if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
-    st.markdown
+            rsi_val = float(
