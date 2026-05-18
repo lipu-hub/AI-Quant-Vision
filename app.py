@@ -116,7 +116,8 @@ tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
 st.subheader("Live Budget Scanner with Real-Time Risk & News Sentiment Tracker")
 
-@st.cache_data(ttl=30)
+# ⚡ LIVE REFRESH OVERHAUL: Cache timing reduced to 5 seconds for continuous real-time updates
+@st.cache_data(ttl=5)
 def fetch_trading_data(ticker_name):
     try:
         df = yf.download(ticker_name, period="1mo", interval="15m", auto_adjust=True, progress=False)
@@ -164,7 +165,8 @@ for tick in tickers:
         elif r_val >= 70:
             critical_alerts.append(f"⏰ **[{current_time_ist} IST]** 💥 **{c_name}** is Super OVERBOUGHT (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! High risk zone, look for SELL/SHORT setup.")
 
-@st.fragment(run_every=15)
+# 🔄 Loop Fragment set to 5 seconds interval for ultra-live notification trigger
+@st.fragment(run_every=5)
 def live_alert_scanner(alerts_list):
     st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
     if alerts_list:
