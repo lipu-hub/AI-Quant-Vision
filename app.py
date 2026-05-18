@@ -116,7 +116,6 @@ tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
 st.subheader("Live Budget Scanner with Real-Time Risk & News Sentiment Tracker")
 
-# ⚡ LIVE REFRESH OVERHAUL: Cache timing reduced to 5 seconds for continuous real-time updates
 @st.cache_data(ttl=5)
 def fetch_trading_data(ticker_name):
     try:
@@ -146,9 +145,11 @@ def fetch_trading_data(ticker_name):
         return None
     return None
 
-# 🚨 REAL-TIME LIVE TRADING ALERT TRACE ENGINE WITH PURE INDIAN STANDARD TIME (IST)
-critical_alerts = []
-ist_timezone = pytz.timezone('Asia/Kolkata')  # 🇮🇳 IST Zone Lock
+# 🚨 ULTRA TRADING ALERT ENGINE: 3-WAY SPLIT SIGNAL (BUY / SELL / HOLD)
+buy_alerts = []
+sell_alerts = []
+hold_alerts = []
+ist_timezone = pytz.timezone('Asia/Kolkata')
 
 for tick in tickers:
     t_df = fetch_trading_data(tick)
@@ -156,30 +157,50 @@ for tick in tickers:
         r_val = float(t_df['RSI'].iloc[-1]) if 'RSI' in t_df.columns else 50.0
         c_price = float(t_df['Close'].iloc[-1])
         c_name = tick.replace(".NS", "")
-        
-        # Exact Indian Time Capture
         current_time_ist = datetime.now(ist_timezone).strftime("%I:%M:%S %p")
         
-        if r_val <= 23:
-            critical_alerts.append(f"⏰ **[{current_time_ist} IST]** 🔥 **{c_name}** is Super OVERSOLD (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! Strong setup for sudden BUY bounce.")
-        elif r_val >= 70:
-            critical_alerts.append(f"⏰ **[{current_time_ist} IST]** 💥 **{c_name}** is Super OVERBOUGHT (RSI: {r_val:.1f}) at ₹{c_price:,.2f}! High risk zone, look for SELL/SHORT setup.")
+        alert_msg = f"⏰ **[{current_time_ist} IST]** ◽ **{c_name}** at ₹{c_price:,.2f} (RSI: {r_val:.1f})"
+        
+        if r_val <= 30:
+            buy_alerts.append(f"🟢 **[BUY ALERT]** {alert_msg} -> Strong technical setup for reversal bounce!")
+        elif r_val >= 65:
+            sell_alerts.append(f"🔴 **[SELL ALERT]** {alert_msg} -> Asset overstretched, immediate profit booking zone.")
+        else:
+            hold_alerts.append(f"🟡 **[HOLD SIGNAL]** {alert_msg} -> Range-bound consolidation. Avoid fresh entries.")
 
-# 🔄 Loop Fragment set to 5 seconds interval for ultra-live notification trigger
+# 🔄 5-Second Loop Fragment for Dynamic Updates
 @st.fragment(run_every=5)
-def live_alert_scanner(alerts_list):
-    st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
-    if alerts_list:
-        for alert in alerts_list:
-            st.error(alert)
-            if "OVERSOLD" in alert:
-                st.toast(f"🎯 Buy Opportunity detected!", icon="🔥")
-            else:
-                st.toast(f"⚠️ Profit Booking zone reached!", icon="💥")
-    else:
-        st.info("🔄 Scanner active. Real-time Quant risk tracking enabled. Monitoring market entries...")
+def live_alert_scanner(b_list, s_list, h_list):
+    st.markdown("### 🚦 Immediate AI Whistleblower (Live Action Panel)")
+    
+    # Render Actionable Signal Columns
+    b_col, s_col, h_col = st.columns(3)
+    
+    with b_col:
+        st.markdown("#### 🟢 IMMEDIATE BUY DECK")
+        if b_list:
+            for al in b_list[:5]:  # Show top 5 fresh
+                st.success(al)
+        else:
+            st.info("No deep value entry points currently.")
+            
+    with s_col:
+        st.markdown("#### 🔴 IMMEDIATE SELL DECK")
+        if s_list:
+            for al in s_list[:5]:
+                st.error(al)
+        else:
+            st.info("No overbought fatigue detected yet.")
+            
+    with h_col:
+        st.markdown("#### 🟡 ACTIVE HOLD DECK")
+        if h_list:
+            for al in h_list[:5]:
+                st.warning(al)
+        else:
+            st.info("No range bound assets.")
 
-live_alert_scanner(critical_alerts)
+live_alert_scanner(buy_alerts, sell_alerts, hold_alerts)
 st.markdown("---")
 
 st.markdown("### 🔍 Intelligent Asset Filter")
@@ -255,81 +276,4 @@ for i, ticker in enumerate(tickers):
                                 target_p = latest_price * 1.025 if calc_action == 'BUY' else latest_price * 0.975
                                 sl_p = latest_price * 0.99 if calc_action == 'BUY' else latest_price * 1.01
                                 current_time_ist_err = datetime.now(ist_timezone).strftime("%I:%M:%S %p")
-                                st.session_state.ai_analysis_result = f"ACTION: {calc_action}\n**🎯 Target: {symbol}{target_p:,.2f} | 🛑 Stop-Loss: {symbol}{sl_p:,.2f}**\n\n[🤖 Terminal Engine Backup Output] Gemini core limit reached. Fallback triggered at {current_time_ist_err} IST. RSI is {rsi_val:.1f} with active {macd_signal} setup."
-                with btn_col2:
-                    if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
-                        st.session_state.portfolio[ticker] = {
-                            "buy_price": latest_price, 
-                            "qty": 100,
-                            "symbol": symbol
-                        }
-                        st.toast(f"Bought 100 shares of {clean_name}!", icon="🛍️")
-
-# Execution desk render logic
-if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
-    st.markdown("---")
-    st.subheader(f"⚡ Live Quant Execution Desk: {st.session_state.selected_ticker}")
-    chart_col, signal_col = st.columns([3, 2])
-    with chart_col:
-        raw_df = fetch_trading_data(st.session_state.ticker_raw_name)
-        if raw_df is not None and not raw_df.empty:
-            close_vals = raw_df['Close'].squeeze()
-            fig = go.Figure()
-            fig.add_trace(go.Candlestick(x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(), low=raw_df['Low'].squeeze(), close=close_vals, name='Price Action'))
-            fig.add_trace(go.Scatter(x=raw_df.index, y=raw_df['EMA_20'].squeeze(), line=dict(color='#f97316', width=2), name='20 EMA Trend'))
-            fig.update_layout(xaxis_rangeslider_visible=False, height=420, template="plotly_white", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig, use_container_width=True)
-    with signal_col:
-        with st.container(border=True):
-            st.markdown("### 🤖 Executable AI Strategy")
-            
-            raw_ai_text = st.session_state.ai_analysis_result
-            lines = raw_ai_text.strip().split('\n')
-            first_line = lines[0].upper() if lines else ""
-            
-            if "BUY" in first_line:
-                st.markdown('<div class="alert-box alert-buy">🔥 BUY ALERT</div>', unsafe_allow_html=True)
-            elif "SELL" in first_line:
-                st.markdown('<div class="alert-box alert-sell">💥 SELL ALERT</div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="alert-box alert-hold">⚠️ HOLD SIGNAL</div>', unsafe_allow_html=True)
-                
-            story_text = "\n".join(lines[1:])
-            st.markdown(story_text)
-
-# Live Active Portfolio Simulator Desk
-st.markdown("---")
-st.subheader("💼 Active Position Simulator Desk (Live Risk Room)")
-if not st.session_state.portfolio:
-    st.info("No active open positions. Tap 'Sim Buy 🛍️' on any asset card above to launch trading simulation.")
-else:
-    portfolio_data = []
-    total_pnl = 0.0
-    
-    for ticker, details in list(st.session_state.portfolio.items()):
-        current_price = st.session_state.live_prices.get(ticker, details['buy_price'])
-        qty = details['qty']
-        buy_value = details['buy_price'] * qty
-        current_value = current_price * qty
-        pnl = current_value - buy_value
-        total_pnl += pnl
-        
-        pnl_arrow = "▲" if pnl >= 0 else "▼"
-        pnl_color = "green" if pnl >= 0 else "red"
-        
-        portfolio_data.append({
-            "Asset": ticker.replace(".NS", ""),
-            "Qty Bought": qty,
-            "Entry Price": f"{details['symbol']}{details['buy_price']:,.2f}",
-            "Current Price": f"{details['symbol']}{current_price:,.2f}",
-            "Investment": f"{details['symbol']}{buy_value:,.2f}",
-            "Current Value": f"{details['symbol']}{current_value:,.2f}",
-            "Live Return (P&L)": f":{pnl_color}[{pnl_arrow} {details['symbol']}{pnl:,.2f}]"
-        })
-    
-    st.table(pd.DataFrame(portfolio_data))
-    total_color = "green" if total_pnl >= 0 else "red"
-    st.markdown(f"### 🏁 Net Simulator Balance: :{total_color}[₹{total_pnl:,.2f}]")
-    if st.button("🧹 Square Off / Clear All Positions"):
-        st.session_state.portfolio = {}
-        st.rerun()
+                                st.session_state.ai_analysis_result = f"ACTION: {calc_action}\n**🎯
