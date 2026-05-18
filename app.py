@@ -79,6 +79,21 @@ div[data-testid="stVComponentBlock"] > div[style*="border"] {{
 .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.7rem !important; font-weight: bold; color: {price_color} !important; margin: 2px 0px; }}
 .stock-title {{ font-size: 1.1rem; font-weight: bold; color: {title_color} !important; }}
 .indicator-text {{ font-size: 0.85rem; font-weight: 600; margin-top: 4px; }}
+
+/* 🚨 ONE-WORD HIGH-VISIBILITY ALERT STYLES */
+.alert-box {{
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 2rem !important;
+    font-weight: 900 !important;
+    text-align: center;
+    margin-bottom: 15px;
+    letter-spacing: 2px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}}
+.alert-buy {{ background-color: #10b981 !important; color: white !important; }}
+.alert-sell {{ background-color: #ef4444 !important; color: white !important; }}
+.alert-hold {{ background-color: #f59e0b !important; color: white !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -98,7 +113,7 @@ def get_brand_avatar(ticker):
 
 tickers = st.session_state.custom_tickers
 st.title("🚀 MarketMind AI Trading Terminal")
-st.subheader("Live Budget Scanner with One-Word AI Alerts")
+st.subheader("Live Budget Scanner with Visual Action Blocks")
 
 @st.cache_data(ttl=30)
 def fetch_trading_data(ticker_name):
@@ -177,14 +192,13 @@ for i, ticker in enumerate(tickers):
                                 recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
                                 ema_now = float(data_df['EMA_20'].iloc[-1])
                                 
-                                # ✨ EXTREMELY AGGRESSIVE ONE-WORD PROMPT
+                                # Custom detailed prompt but strictly forces formatting keywords
                                 prompt = (
                                     f"Analyze {clean_name}. Price: {latest_price}, EMA_20: {ema_now:.2f}, RSI: {rsi_val:.2f}, MACD: {macd_signal}.\n"
                                     f"Data:\n{recent_data}\n\n"
-                                    f"STRICT INSTRUCTIONS:\n"
-                                    f"1. Start your response with exactly ONE line containing only one word in huge markdown font: Either '# 🟢 BUY', '# 🔴 SELL', or '# 🟡 HOLD'.\n"
-                                    f"2. Below that single word line, add a divider '---'.\n"
-                                    f"3. After the divider, give exactly 2 bullet points explaining why (max 15 words per bullet). No other text."
+                                    f"FORMAT RULES:\n"
+                                    f"1. Your very first line must start with exactly 'ACTION: BUY', 'ACTION: SELL', or 'ACTION: HOLD'. No other text on that line.\n"
+                                    f"2. After that first line, write your normal brief trading strategy and core reasonings."
                                 )
                                 model = genai.GenerativeModel('models/gemini-2.5-flash')
                                 st.session_state.ai_analysis_result = model.generate_content(prompt).text
@@ -211,4 +225,31 @@ if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
     with signal_col:
         with st.container(border=True):
             st.markdown("### 🤖 Executable AI Strategy")
-            st.markdown(st.session_state.ai_analysis_result)
+            
+            # ✂️ PARSING CODE TO SEPARATE THE ONE-WORD SIGNAL FROM THE STORY
+            raw_ai_text = st.session_state.ai_analysis_result
+            lines = raw_ai_text.strip().split('\n')
+            first_line = lines[0].upper() if lines else ""
+            
+            # Rendering Highlighted Block based on pure keyword tracking
+            if "BUY" in first_line:
+                st.markdown('<div class="alert-box alert-buy">🔥 BUY ALERT</div>', unsafe_allow_html=True)
+                story_text = "\n".join(lines[1:])
+            elif "SELL" in first_line:
+                st.markdown('<div class="alert-box alert-sell">💥 SELL ALERT</div>', unsafe_allow_html=True)
+                story_text = "\n".join(lines[1:])
+            elif "HOLD" in first_line:
+                st.markdown('<div class="alert-box alert-hold">⚠️ HOLD SIGNAL</div>', unsafe_allow_html=True)
+                story_text = "\n".join(lines[1:])
+            else:
+                # Fallback filter mapping
+                if "BUY" in raw_ai_text.upper():
+                    st.markdown('<div class="alert-box alert-buy">🔥 BUY ALERT</div>', unsafe_allow_html=True)
+                elif "SELL" in raw_ai_text.upper():
+                    st.markdown('<div class="alert-box alert-sell">💥 SELL ALERT</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div class="alert-box alert-hold">⚠️ HOLD SIGNAL</div>', unsafe_allow_html=True)
+                story_text = raw_ai_text
+            
+            # Print the rest of the strategy/story details cleanly below the highlight block
+            st.markdown(story_text)
