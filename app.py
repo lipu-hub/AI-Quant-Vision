@@ -3,7 +3,6 @@ import yfinance as yf
 import pandas as pd
 import google.generativeai as genai
 import plotly.graph_objects as go
-import requests
 
 # ⚡ Page Configuration
 st.set_page_config(page_title="MarketMind AI Terminal", layout="wide", initial_sidebar_state="expanded")
@@ -13,23 +12,6 @@ if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 else:
     st.sidebar.warning("⚠️ Please configure GEMINI_API_KEY in Streamlit Secrets.")
-
-# 🤖 TELEGRAM BOT ENGINE
-TELEGRAM_BOT_TOKEN = st.secrets.get("TELEGRAM_BOT_TOKEN", "").strip()
-TELEGRAM_CHAT_ID = st.secrets.get("TELEGRAM_CHAT_ID", "").strip()
-
-def send_telegram_notification(message):
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        return False, "Telegram Config Missing in Streamlit Secrets!"
-    try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message, "parse_mode": "Markdown"}
-        response = requests.post(url, json=payload, timeout=10)
-        if response.status_code == 200:
-            return True, "Success"
-        return False, response.text
-    except Exception as e:
-        return False, str(e)
 
 # INITIALIZE SESSION STATES
 if "portfolio" not in st.session_state:
@@ -120,7 +102,7 @@ def fetch_trading_data(ticker_name):
 # ==========================================
 if page == "🎯 Live Whistleblower":
     st.title("🚀 MarketMind AI Trading Terminal")
-    st.subheader("Live Budget Scanner with Telegram Phone Alerts")
+    st.subheader("Live Budget Scanner with Real-Time Data")
     
     # 🚨 AUTO-SCANNER FRAGMENT
     @st.fragment(run_every=15)
@@ -151,109 +133,4 @@ if page == "🎯 Live Whistleblower":
                         st.session_state.live_prices[ticker]["status"] = "BUY"
                         buy_list.append(ticker)
                     elif price_change < -0.12:
-                        st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} ({price_change:.2f}%)")
-                        st.session_state.live_prices[ticker]["status"] = "EXIT"
-                        exit_list.append(ticker)
-                    
-        if not buy_list and not exit_list:
-            st.info("🔄 Scanner running: Waiting for price spike or live market trend action.")
-
-    live_alert_scanner()
-    st.markdown("---")
-
-    # GRID UI
-    st.markdown("### 🔍 Intelligent Asset Grid")
-    cols = st.columns(4)
-    for i, ticker in enumerate(tickers):
-        with cols[i % 4]:
-            data_df = fetch_trading_data(ticker)
-            if data_df is not None and not data_df.empty:
-                try:
-                    close_series = data_df['Close'].squeeze()
-                    latest_price = float(close_series.iloc[-1])
-                    symbol = "$" if "USD" in ticker else "₹"
-                    clean_name = ticker.replace(".NS", "")
-                    
-                    if ticker not in st.session_state.live_prices:
-                        st.session_state.live_prices[ticker] = {"price": latest_price, "change": 0.0, "status": "STABLE"}
-                    
-                    with st.container(border=True):
-                        st.markdown(f"<div class='stock-title'>{clean_name}</div>", unsafe_allow_html=True)
-                        st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
-                        
-                        btn_col1, btn_col2 = st.columns(2)
-                        with btn_col1:
-                            if st.button(f"Scan 🎯", key=f"scan_{ticker}", use_container_width=True):
-                                st.session_state.selected_ticker = clean_name
-                                st.session_state.ticker_raw_name = ticker
-                                with st.spinner("AI analyzing..."):
-                                    st.session_state.ai_analysis_result = None
-                                    recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
-                                    ema_now = float(data_df['EMA_20'].iloc[-1])
-                                    prompt = f"Analyze this asset for short term trading: {clean_name}. Current Price: {latest_price}, EMA_20: {ema_now:.2f}. Data: {recent_data}. Provide clear buy/sell signal and entry zones."
-                                    model = genai.GenerativeModel('models/gemini-2.5-flash')
-                                    st.session_state.ai_analysis_result = model.generate_content(prompt).text
-                        with btn_col2:
-                            if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
-                                st.session_state.portfolio[ticker] = {"buy_price": latest_price, "qty": 100}
-                                st.toast(f"Added 100 shares of {clean_name} to Practice Portfolio!", icon="💰")
-                except:
-                    pass
-
-    # Charts & Signals Execution Desk
-    if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
-        st.markdown("---")
-        st.subheader(f"⚡ Live Quant Execution Desk: {st.session_state.selected_ticker}")
-        chart_col, signal_col = st.columns([3, 2])
-        
-        with chart_col:
-            raw_df = fetch_trading_data(st.session_state.ticker_raw_name)
-            if raw_df is not None and not raw_df.empty:
-                fig = go.Figure()
-                fig.add_trace(go.Candlestick(
-                    x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(),
-                    low=raw_df['Low'].squeeze(), close=raw_df['Close'].squeeze(), name='Price'
-                ))
-                fig.update_layout(xaxis_rangeslider_visible=False, height=400, template=plotly_template, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig, use_container_width=True)
-                
-        with signal_col:
-            with st.container(border=True):
-                st.markdown("### 🤖 Executable AI Strategy")
-                st.markdown(st.session_state.ai_analysis_result)
-                st.markdown("---")
-                if st.button("📲 Send Signal Alert to Phone", use_container_width=True):
-                    with st.spinner("Sending alert..."):
-                        clean_tg_text = f"🎯 *MARKETMIND QUANT SIGNAL* 🎯\n\nAsset: {st.session_state.selected_ticker}\n\n{st.session_state.ai_analysis_result}"
-                        success, error_msg = send_telegram_notification(clean_tg_text)
-                        if success:
-                            st.success("🚀 Alert sent to your phone!")
-                        else:
-                            st.error(f"Failed to send: {error_msg}")
-
-# ==========================================
-# PAGE 2: RISK PORTFOLIO VIEW
-# ==========================================
-if page == "💼 My Risk Portfolio":
-    st.title("💼 Live Practice Portfolio Simulation")
-    if st.session_state.portfolio:
-        for p_ticker, p_data in list(st.session_state.portfolio.items()):
-            live_p_dict = st.session_state.live_prices.get(p_ticker, {})
-            live_p = live_p_dict.get("price", p_data["buy_price"]) if isinstance(live_p_dict, dict) else p_data["buy_price"]
-            current_pnl = (live_p - p_data["buy_price"]) * p_data["qty"]
-            color = "#10b981" if current_pnl >= 0 else "#ef4444"
-            
-            with st.container(border=True):
-                col_a, col_b = st.columns([3, 1])
-                with col_a:
-                    st.markdown(f"### {p_ticker.replace('.NS','')}")
-                    st.markdown(f"Qty: **{p_data['qty']}** | Avg Price: **{p_data['buy_price']:.2f}** | Current Price: **{live_p:.2f}**")
-                    st.markdown(f"Current P&L: <span style='color:{color}; font-size:1.3rem; font-weight:bold;'>₹{current_pnl:.2f}</span>", unsafe_allow_html=True)
-                with col_b:
-                    if st.button(f"Square Off ❌", key=f"sell_page_{p_ticker}"):
-                        tg_msg = f"🚨 *SQUARE OFF ALERT* 🚨\n\nAsset: {p_ticker.replace('.NS','')}\nExit Price: {live_p:.2f}\nFinal P&L: ₹{current_pnl:.2f}\n\nPosition Closed Successfully!"
-                        send_telegram_notification(tg_msg)
-                        del st.session_state.portfolio[p_ticker]
-                        st.rerun()
-    else:
-        st.info("No active simulator positions. Go to 'Live Whistleblower' to buy positions.")
+                        st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} ({price_change:.2
