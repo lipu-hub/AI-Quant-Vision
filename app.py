@@ -5,7 +5,7 @@ import google.generativeai as genai
 import plotly.graph_objects as go
 
 # ⚡ Page Configuration
-st.set_page_config(page_title="TradeSignal — Live Dashboard", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="MarketMind AI Terminal", layout="wide", initial_sidebar_state="expanded")
 
 # 🔐 Streamlit Secrets Verification
 if "GEMINI_API_KEY" in st.secrets:
@@ -17,83 +17,72 @@ else:
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = {}
 if "selected_ticker" not in st.session_state:
-    st.session_state.selected_ticker = "RELIANCE"
+    st.session_state.selected_ticker = None
 if "ticker_raw_name" not in st.session_state:
-    st.session_state.ticker_raw_name = "RELIANCE.NS"
+    st.session_state.ticker_raw_name = None
 if "ai_analysis_result" not in st.session_state:
-    st.session_state.ai_analysis_result = "Click 'Scan 🎯' on any asset below to trigger the Gemini AI Visual Quant engine."
+    st.session_state.ai_analysis_result = None
 if "live_prices" not in st.session_state:
     st.session_state.live_prices = {}
 
-# Premium Stock List matching your new design
 if "custom_tickers" not in st.session_state:
     st.session_state.custom_tickers = [
-        "RELIANCE.NS", "INFY.NS", "TCS.NS", "HDFCBANK.NS", 
-        "WIPRO.NS", "ICICIBANK.NS", "BAJFINANCE.NS", "TATAMOTORS.NS"
+        "SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS",
+        "IDEA.NS", "YESBANK.NS", "JPPOWER.NS", "RVNL.NS", "TATAPOWER.NS",
+        "NHPC.NS", "SJVN.NS", "NBCC.NS", "HUDCO.NS", "IOC.NS",
+        "SAIL.NS", "GAIL.NS", "IFCI.NS", "BTC-USD", "ETH-USD"
     ]
 
-# 🎨 PREMIUM NEON DARK MODE STYLE INJECTION
-st.markdown("""
+# 🎛️ NAVIGATION CONTROLLER WITH ADMIN MASTER PIN
+with st.sidebar:
+    st.markdown("## 🧭 Terminal Navigation")
+    page = st.radio("Select Workspace View:", ["🎯 Live Whistleblower", "💼 My Risk Portfolio", "⚙️ Core Admin Console"])
+    st.markdown("---")
+    
+    if page == "⚙️ Core Admin Console":
+        st.markdown("### ⚙️ Core Admin Console")
+        admin_pin = st.text_input("Enter Admin Master Pin:", type="password")
+        if admin_pin == "777": 
+            st.success("🔓 Admin Access Granted!")
+            new_ticker = st.text_input("Add Ticker Name (e.g., RELIANCE.NS):").upper().strip()
+            if st.button("➕ Inject Asset"):
+                if new_ticker and new_ticker not in st.session_state.custom_tickers:
+                    st.session_state.custom_tickers.append(new_ticker)
+                    st.rerun()
+            ticker_to_remove = st.selectbox("Select Asset to Remove:", ["None"] + st.session_state.custom_tickers)
+            if ticker_to_remove != "None" and st.button("❌ Terminate Asset"):
+                st.session_state.custom_tickers.remove(ticker_to_remove)
+                st.rerun()
+        elif admin_pin != "":
+            st.error("🔒 Incorrect Pin.")
+
+# 🎛️ INJECTING STYLE BLOCK
+bg_color = "#f8fafc"
+text_color = "#0f172a"
+card_bg = "#ffffff"
+border_color = "rgba(234, 88, 12, 0.4)"
+hover_border = "#ea580c"
+price_color = "#ea580c" 
+title_color = "#475569"
+
+st.markdown(f"""
 <style>
-    /* Global Styles */
-    .stApp { background-color: #0b0f19 !important; color: #f1f5f9 !important; }
-    h1, h2, h3, p, span, label, div { color: #f1f5f9 !important; font-family: 'Inter', sans-serif; }
-    
-    /* Sidebar Styling */
-    section[data-testid="stSidebar"] { background-color: #0f172a !important; border-right: 1px solid #1e293b; }
-    
-    /* Top Market Ticker Banner */
-    .market-ticker-banner {
-        background: #111827; border: 1px solid #1e293b; border-radius: 8px;
-        padding: 10px 20px; display: flex; justify-content: space-between; margin-bottom: 25px;
-    }
-    .ticker-item { font-size: 0.9rem; font-weight: bold; }
-    .text-green { color: #10b981 !important; }
-    .text-red { color: #ef4444 !important; }
-    
-    /* Glowing Asset Cards Layout */
-    .crypto-card {
-        background: #131c2e !important; border-radius: 12px !important;
-        padding: 20px !important; margin-bottom: 15px; transition: all 0.3s ease;
-    }
-    .card-buy { border: 1px solid rgba(16, 185, 129, 0.4) !important; box-shadow: 0 0 15px rgba(16, 185, 129, 0.1) !important; }
-    .card-sell { border: 1px solid rgba(239, 68, 68, 0.4) !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.1) !important; }
-    .card-hold { border: 1px solid rgba(245, 158, 11, 0.4) !important; box-shadow: 0 0 15px rgba(245, 158, 11, 0.1) !important; }
-    
-    .stock-badge {
-        float: right; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;
-    }
-    .badge-buy { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-    .badge-sell { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-    .badge-hold { background: rgba(245, 158, 11, 0.2); color: #2563eb; }
-    
-    .price-large { font-size: 1.7rem !important; font-weight: 800 !important; font-family: 'JetBrains Mono', monospace; margin: 8px 0; }
+    .stApp {{ background-color: {bg_color} !important; color: {text_color} !important; }}
+    h1, h2, h3, p, span, label {{ color: {text_color} !important; font-weight: 600; }}
+    div[data-testid="stMarkdownContainer"] p {{ color: {text_color} !important; }}
+    div[data-testid="stVComponentBlock"] > div[style*="border"] {{
+        border: 1px solid {border_color} !important;
+        border-radius: 12px !important;
+        background: {card_bg} !important;
+        padding: 20px !important;
+        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
+    }}
+    .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.8rem !important; font-weight: bold; color: {price_color} !important; margin: 5px 0px; }}
+    .stock-title {{ font-size: 1.2rem; font-weight: 600; color: {title_color} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
-# 🧭 SIDEBAR NAVIGATION
-with st.sidebar:
-    st.markdown("### ⚡ TradeSignal `v2.0`")
-    page = st.radio("NAVIGATION", [" Live Overview", " My Portfolio Simulation"])
-    st.markdown("---")
-    st.markdown("### 📊 WATCHLIST")
-    for t in st.session_state.custom_tickers:
-        st.markdown(f"• **{t.replace('.NS','')}**")
-
-# TOP MARKET MARQUEE DATA FETCH
-@st.cache_data(ttl=60)
-def get_market_indices():
-    return {"SENSEX": "72,066 (+0.4%)", "NIFTY 50": "22,104 (+0.3%)", "BANK NIFTY": "46,982 (-0.2%)", "USD/INR": "83.42"}
-
-indices = get_market_indices()
-st.markdown(f"""
-<div class="market-ticker-banner">
-    <div class="ticker-item">SENSEX: <span class="text-green">{indices['SENSEX']}</span></div>
-    <div class="ticker-item">NIFTY 50: <span class="text-green">{indices['NIFTY 50']}</span></div>
-    <div class="ticker-item">BANK NIFTY: <span class="text-red">{indices['BANK NIFTY']}</span></div>
-    <div class="ticker-item">USD/INR: <span>{indices['USD/INR']}</span></div>
-</div>
-""", unsafe_allow_html=True)
+tickers = st.session_state.custom_tickers
 
 @st.cache_data(ttl=20)
 def fetch_trading_data(ticker_name):
@@ -102,91 +91,139 @@ def fetch_trading_data(ticker_name):
         if not df.empty:
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
+            df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
         return df
     except:
         return None
 
 # ==========================================
-# PAGE 1: LIVE OVERVIEW (WHISTLEBLOWER GRID)
+# PAGE 1: LIVE WHISTLEBLOWER PANEL
 # ==========================================
-if page == " Live Overview":
-    st.title("⚡ Live Overview")
-    st.caption("On-Demand AI Smart Trading Signals Desk")
+if page == "🎯 Live Whistleblower":
+    st.title("🚀 MarketMind AI Trading Terminal")
+    st.subheader("Live Budget Scanner with Real-Time Data")
     
-    # 📢 LIVE BREAKOUT ALERTS BLOCK (YFINANCE FREE REFRESH ENGINE)
+    # 🚨 AUTO-SCANNER FRAGMENT
     @st.fragment(run_every=15)
-    def live_data_scrip_scanner():
-        st.markdown("### 🔔 Active Whistleblower Feed")
-        alert_triggered = False
+    def live_alert_scanner():
+        st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
+        buy_list, exit_list = [], []
         
-        for ticker in st.session_state.custom_tickers:
+        for ticker in tickers:
             df = yf.download(ticker, period="1d", interval="1m", auto_adjust=True, progress=False)
             if not df.empty:
                 if isinstance(df.columns, pd.MultiIndex):
                     df.columns = df.columns.get_level_values(0)
+                latest_time = df.index[-1]
+                current_time = pd.Timestamp.now(tz=latest_time.tz)
+                time_diff_minutes = (current_time - latest_time).total_seconds() / 60
+                
                 close_series = df['Close'].squeeze()
                 current_price = float(close_series.iloc[-1])
                 prev_price = float(close_series.iloc[-2]) if len(close_series) > 1 else current_price
                 price_change = ((current_price - prev_price) / prev_price) * 100
                 clean_name = ticker.replace(".NS", "")
                 
-                # Determine status rules visually
-                status = "HOLD"
-                if price_change > 0.05: status = "BUY"
-                elif price_change < -0.05: status = "SELL"
+                st.session_state.live_prices[ticker] = {"price": current_price, "change": price_change, "status": "STABLE"}
                 
-                st.session_state.live_prices[ticker] = {"price": current_price, "change": price_change, "status": status}
-                
-                if price_change > 0.12:
-                    st.success(f"🚀 **{clean_name} — BUY ALERT:** Surge detected (+{price_change:.2f}%) at ₹{current_price:,.2f}")
-                    alert_triggered = True
-                elif price_change < -0.12:
-                    st.error(f"📉 **{clean_name} — EXIT ALERT:** Drop detected ({price_change:.2f}%) at ₹{current_price:,.2f}")
-                    alert_triggered = True
+                if time_diff_minutes < 15:
+                    if price_change > 0.12:
+                        st.success(f"🔥 **IMMEDIATE BUY ALERT:** {clean_name} (+{price_change:.2f}%)")
+                        st.session_state.live_prices[ticker]["status"] = "BUY"
+                        buy_list.append(ticker)
+                    elif price_change < -0.12:
+                        st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} ({price_change:.2f}%)")
+                        st.session_state.live_prices[ticker]["status"] = "EXIT"
+                        exit_list.append(ticker)
                     
-        if not alert_triggered:
-            st.info("🔄 Free yfinance engine monitoring live ticks... Everything stable in neutral corridors.")
+        if not buy_list and not exit_list:
+            st.info("🔄 Scanner running: Waiting for price spike or live market trend action.")
 
-    live_data_scrip_scanner()
+    live_alert_scanner()
     st.markdown("---")
 
-    # 🎛️ SMART NEON ASSET GRID
-    st.markdown("### 💎 Intelligent Asset Grid")
+    # GRID UI
+    st.markdown("### 🔍 Intelligent Asset Grid")
     cols = st.columns(4)
-    
-    for i, ticker in enumerate(st.session_state.custom_tickers):
-        clean_name = ticker.replace(".NS", "")
-        live_info = st.session_state.live_prices.get(ticker, {"price": 0.0, "change": 0.0, "status": "HOLD"})
-        
-        # Color mapping logic based on your custom UI choice
-        card_class = "card-hold"
-        badge_class = "badge-hold"
-        if live_info["status"] == "BUY":
-            card_class = "card-buy"
-            badge_class = "badge-buy"
-        elif live_info["status"] == "SELL":
-            card_class = "card-sell"
-            badge_class = "badge-sell"
-            
+    for i, ticker in enumerate(tickers):
         with cols[i % 4]:
-            st.markdown(f"""
-            <div class="crypto-card {card_class}">
-                <span class="stock-badge {badge_class}">{live_info['status']}</span>
-                <div style="font-size:1.1rem; font-weight:bold; color:#94a3b8;">{clean_name}</div>
-                <div class="price-large">₹{live_info['price']:,.2f}</div>
-                <div style="font-size:0.85rem; color:{'#10b981' if live_info['change'] >= 0 else '#ef4444'}">
-                    {'+' if live_info['change'] >= 0 else ''}{live_info['change']:.2f}% today
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            data_df = fetch_trading_data(ticker)
+            if data_df is not None and not data_df.empty:
+                try:
+                    close_series = data_df['Close'].squeeze()
+                    latest_price = float(close_series.iloc[-1])
+                    symbol = "$" if "USD" in ticker else "₹"
+                    clean_name = ticker.replace(".NS", "")
+                    
+                    if ticker not in st.session_state.live_prices:
+                        st.session_state.live_prices[ticker] = {"price": latest_price, "change": 0.0, "status": "STABLE"}
+                    
+                    with st.container(border=True):
+                        st.markdown(f"<div class='stock-title'>{clean_name}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
+                        
+                        btn_col1, btn_col2 = st.columns(2)
+                        with btn_col1:
+                            if st.button(f"Scan 🎯", key=f"scan_{ticker}", use_container_width=True):
+                                st.session_state.selected_ticker = clean_name
+                                st.session_state.ticker_raw_name = ticker
+                                with st.spinner("AI analyzing..."):
+                                    st.session_state.ai_analysis_result = None
+                                    recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
+                                    ema_now = float(data_df['EMA_20'].iloc[-1])
+                                    prompt = f"Analyze this asset for short term trading: {clean_name}. Current Price: {latest_price}, EMA_20: {ema_now:.2f}. Data: {recent_data}. Provide clear buy/sell signal and entry zones."
+                                    model = genai.GenerativeModel('models/gemini-2.5-flash')
+                                    st.session_state.ai_analysis_result = model.generate_content(prompt).text
+                        with btn_col2:
+                            if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
+                                st.session_state.portfolio[ticker] = {"buy_price": latest_price, "qty": 100}
+                                st.toast(f"Added 100 shares of {clean_name} to Practice Portfolio!", icon="💰")
+                except:
+                    pass
+
+    # Charts & Signals Execution Desk
+    if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
+        st.markdown("---")
+        st.subheader(f"⚡ Live Quant Execution Desk: {st.session_state.selected_ticker}")
+        chart_col, signal_col = st.columns([3, 2])
+        
+        with chart_col:
+            raw_df = fetch_trading_data(st.session_state.ticker_raw_name)
+            if raw_df is not None and not raw_df.empty:
+                fig = go.Figure()
+                fig.add_trace(go.Candlestick(
+                    x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(),
+                    low=raw_df['Low'].squeeze(), close=raw_df['Close'].squeeze(), name='Price'
+                ))
+                fig.update_layout(xaxis_rangeslider_visible=False, height=400, template="plotly_white", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig, use_container_width=True)
+                
+        with signal_col:
+            with st.container(border=True):
+                st.markdown("### 🤖 Executable AI Strategy")
+                st.markdown(st.session_state.ai_analysis_result)
+
+# ==========================================
+# PAGE 2: RISK PORTFOLIO VIEW
+# ==========================================
+if page == "💼 My Risk Portfolio":
+    st.title("💼 Live Practice Portfolio Simulation")
+    if st.session_state.portfolio:
+        for p_ticker, p_data in list(st.session_state.portfolio.items()):
+            live_p_dict = st.session_state.live_prices.get(p_ticker, {})
+            live_p = live_p_dict.get("price", p_data["buy_price"]) if isinstance(live_p_dict, dict) else p_data["buy_price"]
+            current_pnl = (live_p - p_data["buy_price"]) * p_data["qty"]
+            color = "#10b981" if current_pnl >= 0 else "#ef4444"
             
-            b1, b2 = st.columns(2)
-            with b1:
-                if st.button(f"Scan 🎯", key=f"sc_{ticker}", use_container_width=True):
-                    st.session_state.selected_ticker = clean_name
-                    st.session_state.ticker_raw_name = ticker
-                    with st.spinner("Gemini AI computing..."):
-                        data_df = fetch_trading_data(ticker)
-                        if data_df is not None and not data_df.empty:
-                            recent_str = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
-                            prompt = f"Act as a simplified trading meter.
+            with st.container(border=True):
+                col_a, col_b = st.columns([3, 1])
+                with col_a:
+                    st.markdown(f"### {p_ticker.replace('.NS','')}")
+                    st.markdown(f"Qty: **{p_data['qty']}** | Avg Price: **{p_data['buy_price']:.2f}** | Current Price: **{live_p:.2f}**")
+                    st.markdown(f"Current P&L: <span style='color:{color}; font-size:1.3rem; font-weight:bold;'>₹{current_pnl:.2f}</span>", unsafe_allow_html=True)
+                with col_b:
+                    if st.button(f"Square Off ❌", key=f"sell_page_{p_ticker}"):
+                        del st.session_state.portfolio[p_ticker]
+                        st.rerun()
+    else:
+        st.info("No active simulator positions. Go to 'Live Whistleblower' to buy positions.")
