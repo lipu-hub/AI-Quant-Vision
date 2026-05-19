@@ -64,7 +64,6 @@ border_color = "rgba(234, 88, 12, 0.4)"
 hover_border = "#ea580c"
 price_color = "#ea580c" 
 title_color = "#475569"
-plotly_template = "plotly_white"
 
 st.markdown(f"""
 <style>
@@ -196,7 +195,7 @@ if page == "🎯 Live Whistleblower":
                     x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(),
                     low=raw_df['Low'].squeeze(), close=raw_df['Close'].squeeze(), name='Price'
                 ))
-                fig.update_layout(xaxis_rangeslider_visible=False, height=400, template=plotly_white, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                fig.update_layout(xaxis_rangeslider_visible=False, height=400, template="plotly_white", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig, use_container_width=True)
                 
         with signal_col:
@@ -212,4 +211,19 @@ if page == "💼 My Risk Portfolio":
     if st.session_state.portfolio:
         for p_ticker, p_data in list(st.session_state.portfolio.items()):
             live_p_dict = st.session_state.live_prices.get(p_ticker, {})
-            live_p = live_p_dict.get("price", p_data["buy_price"]) if
+            live_p = live_p_dict.get("price", p_data["buy_price"]) if isinstance(live_p_dict, dict) else p_data["buy_price"]
+            current_pnl = (live_p - p_data["buy_price"]) * p_data["qty"]
+            color = "#10b981" if current_pnl >= 0 else "#ef4444"
+            
+            with st.container(border=True):
+                col_a, col_b = st.columns([3, 1])
+                with col_a:
+                    st.markdown(f"### {p_ticker.replace('.NS','')}")
+                    st.markdown(f"Qty: **{p_data['qty']}** | Avg Price: **{p_data['buy_price']:.2f}** | Current Price: **{live_p:.2f}**")
+                    st.markdown(f"Current P&L: <span style='color:{color}; font-size:1.3rem; font-weight:bold;'>₹{current_pnl:.2f}</span>", unsafe_allow_html=True)
+                with col_b:
+                    if st.button(f"Square Off ❌", key=f"sell_page_{p_ticker}"):
+                        del st.session_state.portfolio[p_ticker]
+                        st.rerun()
+    else:
+        st.info("No active simulator positions. Go to 'Live Whistleblower' to buy positions.")
