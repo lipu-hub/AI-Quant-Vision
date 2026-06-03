@@ -194,7 +194,7 @@ if page == "🎯 Live Whistleblower":
     live_alert_scanner()
     st.markdown("---")
 
-    # GRID UI (Yeh complete block chhoot gaya tha)
+    # GRID UI
     st.markdown("### 🔍 Intelligent Asset Grid")
     cols = st.columns(4)
     for i, ticker in enumerate(tickers):
@@ -220,3 +220,66 @@ if page == "🎯 Live Whistleblower":
                                 st.session_state.selected_ticker = clean_name
                                 st.session_state.ticker_raw_name = ticker
                                 with st.spinner("AI analyzing..."):
+                                    st.session_state.ai_analysis_result = None
+                                    recent_data = data_df.tail(10)[['Close', 'High', 'Low']].to_string()
+                                    ema_now = float(data_df['EMA_20'].iloc[-1])
+                                    prompt = f"Analyze this asset for short term trading: {clean_name}. Current Price: {latest_price}, EMA_20: {ema_now:.2f}. Data: {recent_data}. Provide clear buy/sell signal and entry zones."
+                                    model = genai.GenerativeModel('models/gemini-2.5-flash')
+                                    st.session_state.ai_analysis_result = model.generate_content(prompt).text
+                        with btn_col2:
+                            if st.button(f"Sim Buy 🛍️", key=f"sim_{ticker}", use_container_width=True):
+                                st.session_state.portfolio[ticker] = {"buy_price": latest_price, "qty": 100}
+                                st.toast(f"Added 100 shares of {clean_name} to Practice Portfolio!", icon="💰")
+                except:
+                    pass
+
+    # Charts & Signals Execution Desk
+    if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
+        st.markdown("---")
+        st.subheader(f"⚡ Live Quant Execution Desk: {st.session_state.selected_ticker}")
+        chart_col, signal_col = st.columns([3, 2])
+        
+        with chart_col:
+            raw_df = fetch_trading_data(st.session_state.ticker_raw_name)
+            if raw_df is not None and not raw_df.empty:
+                fig = go.Figure()
+                fig.add_trace(go.Candlestick(
+                    x=raw_df.index,
+                    open=raw_df['Open'].squeeze(),
+                    high=raw_df['High'].squeeze(),
+                    low=raw_df['Low'].squeeze(),
+                    close=raw_df['Close'].squeeze(),
+                    name='Price'
+                ))
+                fig.update_layout(xaxis_rangeslider_visible=False, height=400, template="plotly_white", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig, use_container_width=True)
+                
+        with signal_col:
+            with st.container(border=True):
+                st.markdown("### 🤖 Executable AI Strategy")
+                st.markdown(st.session_state.ai_analysis_result)
+
+# ==========================================
+# PAGE 2: RISK PORTFOLIO VIEW
+# ==========================================
+if page == "💼 My Risk Portfolio":
+    st.title("💼 Live Practice Portfolio Simulation")
+    if st.session_state.portfolio:
+        for p_ticker, p_data in list(st.session_state.portfolio.items()):
+            live_p_dict = st.session_state.live_prices.get(p_ticker, {})
+            live_p = live_p_dict.get("price", p_data["buy_price"]) if isinstance(live_p_dict, dict) else p_data["buy_price"]
+            current_pnl = (live_p - p_data["buy_price"]) * p_data["qty"]
+            color = "#10b981" if current_pnl >= 0 else "#ef4444"
+            
+            with st.container(border=True):
+                col_a, col_b = st.columns([3, 1])
+                with col_a:
+                    st.markdown(f"### {p_ticker.replace('.NS','')}")
+                    st.markdown(f"Qty: **{p_data['qty']}** | Avg Price: **{p_data['buy_price']:.2f}** | Current Price: **{live_p:.2f}**")
+                    st.markdown(f"Current P&L: <span style='color:{color}; font-size:1.3rem; font-weight:bold;'>₹{current_pnl:.2f}</span>", unsafe_allow_html=True)
+                with col_b:
+                    if st.button(f"Square Off ❌", key=f"sell_page_{p_ticker}"):
+                        del st.session_state.portfolio[p_ticker]
+                        st.rerun()
+    else:
+        st.info("No active simulator positions. Go to 'Live Whistleblower' to buy positions.")
