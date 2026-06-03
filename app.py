@@ -91,7 +91,7 @@ if page == "⚙️ Core Admin Console":
     elif admin_pin != "":
         st.error("🔒 Incorrect Pin.")
 
-# 🎛️ INJECTING STYLE BLOCK (F-string double curly brackets fixed)
+# 🎛️ INJECTING STYLE BLOCK
 bg_color = "#f8fafc"
 text_color = "#0f172a"
 card_bg = "#ffffff"
@@ -194,6 +194,29 @@ if page == "🎯 Live Whistleblower":
     live_alert_scanner()
     st.markdown("---")
 
-    # GRID UI
+    # GRID UI (Yeh complete block chhoot gaya tha)
     st.markdown("### 🔍 Intelligent Asset Grid")
-    cols = st
+    cols = st.columns(4)
+    for i, ticker in enumerate(tickers):
+        with cols[i % 4]:
+            data_df = fetch_trading_data(ticker)
+            if data_df is not None and not data_df.empty:
+                try:
+                    close_series = data_df['Close'].squeeze()
+                    latest_price = float(close_series.iloc[-1])
+                    symbol = "$" if "USD" in ticker else "₹"
+                    clean_name = ticker.replace(".NS", "")
+                    
+                    if ticker not in st.session_state.live_prices:
+                        st.session_state.live_prices[ticker] = {"price": latest_price, "change": 0.0, "status": "STABLE"}
+                        
+                    with st.container(border=True):
+                        st.markdown(f"<div class='stock-title'>{clean_name}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
+                        
+                        btn_col1, btn_col2 = st.columns(2)
+                        with btn_col1:
+                            if st.button(f"Scan 🎯", key=f"scan_{ticker}", use_container_width=True):
+                                st.session_state.selected_ticker = clean_name
+                                st.session_state.ticker_raw_name = ticker
+                                with st.spinner("AI analyzing..."):
