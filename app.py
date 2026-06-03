@@ -25,12 +25,47 @@ if "ai_analysis_result" not in st.session_state:
 if "live_prices" not in st.session_state:
     st.session_state.live_prices = {}
 
+# 📊 35 Penny & Budget Stocks List (Under ₹100 for Small Capital)
 if "custom_tickers" not in st.session_state:
     st.session_state.custom_tickers = [
-        "SUZLON.NS", "IRFC.NS", "ZOMATO.NS", "PNB.NS", "GMRINFRA.NS",
-        "IDEA.NS", "YESBANK.NS", "JPPOWER.NS", "RVNL.NS", "TATAPOWER.NS",
-        "NHPC.NS", "SJVN.NS", "NBCC.NS", "HUDCO.NS", "IOC.NS",
-        "SAIL.NS", "GAIL.NS", "IFCI.NS", "BTC-USD", "ETH-USD"
+        # --- ₹10 se ₹25 ke Penny Stocks ---
+        "IDEA.NS",       # Vodafone Idea
+        "YESBANK.NS",    # Yes Bank
+        "JPPOWER.NS",    # Jaiprakash Power
+        "SUZLON.NS",     # Suzlon Energy
+        "VIKASECO.NS",   # Vikas Ecotech
+        "URJA.NS",       # Urja Global
+        "GTLINFRA.NS",   # GTL Infrastructure
+        "ALOKINDS.NS",   # Alok Industries
+        "RCOM.NS",       # Reliance Communications
+        "INFIBEAM.NS",   # Infibeam Avenues
+
+        # --- ₹25 se ₹50 ke Stocks ---
+        "SOUTHBANK.NS",  # South Indian Bank
+        "IFCI.NS",       # IFCI Ltd.
+        "MOREPENLAB.NS", # Morepen Laboratories
+        "TV18BRDCST.NS", # TV18 Broadcast
+        "ZOMATO.NS",     # Zomato
+        "HFCL.NS",       # HFCL Ltd.
+        "PATELENG.NS",   # Patel Engineering
+        "GMRINFRA.NS",   # GMR Airports Infrastructure
+        "IRB.NS",        # IRB Infrastructure Developers
+
+        # --- ₹50 se ₹80 ke Budget Stocks ---
+        "SJVN.NS",       # SJVN Ltd.
+        "NHPC.NS",       # NHPC Ltd.
+        "PNB.NS",        # Punjab National Bank
+        "NBCC.NS",       # NBCC (India) Ltd.
+        "HUDCO.NS",      # Housing & Urban Development Corp
+        "RELIANCEPOWER.NS", # Reliance Power
+        "MMTC.NS",       # MMTC Ltd.
+        "HINDCOPPER.NS", # Hindustan Copper
+        "NATIONALUM.NS", # National Aluminium Company
+        "SAIL.NS",       # Steel Authority of India
+        "NTPC.NS",       # NTPC Limited
+        "BHEL.NS",       # Bharat Heavy Electricals
+        "GIPCL.NS",      # Gujarat Industries Power
+        "NLCINDIA.NS"    # NLC India Ltd.
     ]
 
 # 🎛️ NAVIGATION CONTROLLER WITH ADMIN MASTER PIN
@@ -38,23 +73,23 @@ with st.sidebar:
     st.markdown("## 🧭 Terminal Navigation")
     page = st.radio("Select Workspace View:", ["🎯 Live Whistleblower", "💼 My Risk Portfolio", "⚙️ Core Admin Console"])
     st.markdown("---")
-    
-    if page == "⚙️ Core Admin Console":
-        st.markdown("### ⚙️ Core Admin Console")
-        admin_pin = st.text_input("Enter Admin Master Pin:", type="password")
-        if admin_pin == "777": 
-            st.success("🔓 Admin Access Granted!")
-            new_ticker = st.text_input("Add Ticker Name (e.g., RELIANCE.NS):").upper().strip()
-            if st.button("➕ Inject Asset"):
-                if new_ticker and new_ticker not in st.session_state.custom_tickers:
-                    st.session_state.custom_tickers.append(new_ticker)
-                    st.rerun()
-            ticker_to_remove = st.selectbox("Select Asset to Remove:", ["None"] + st.session_state.custom_tickers)
-            if ticker_to_remove != "None" and st.button("❌ Terminate Asset"):
-                st.session_state.custom_tickers.remove(ticker_to_remove)
+
+if page == "⚙️ Core Admin Console":
+    st.markdown("### ⚙️ Core Admin Console")
+    admin_pin = st.text_input("Enter Admin Master Pin:", type="password")
+    if admin_pin == "777":
+        st.success("🔓 Admin Access Granted!")
+        new_ticker = st.text_input("Add Ticker Name (e.g., RELIANCE.NS):").upper().strip()
+        if st.button("➕ Inject Asset"):
+            if new_ticker and new_ticker not in st.session_state.custom_tickers:
+                st.session_state.custom_tickers.append(new_ticker)
                 st.rerun()
-        elif admin_pin != "":
-            st.error("🔒 Incorrect Pin.")
+        ticker_to_remove = st.selectbox("Select Asset to Remove:", ["None"] + st.session_state.custom_tickers)
+        if ticker_to_remove != "None" and st.button("❌ Terminate Asset"):
+            st.session_state.custom_tickers.remove(ticker_to_remove)
+            st.rerun()
+    elif admin_pin != "":
+        st.error("🔒 Incorrect Pin.")
 
 # 🎛️ INJECTING STYLE BLOCK
 bg_color = "#f8fafc"
@@ -62,23 +97,41 @@ text_color = "#0f172a"
 card_bg = "#ffffff"
 border_color = "rgba(234, 88, 12, 0.4)"
 hover_border = "#ea580c"
-price_color = "#ea580c" 
+price_color = "#ea580c"
 title_color = "#475569"
 
 st.markdown(f"""
 <style>
-    .stApp {{ background-color: {bg_color} !important; color: {text_color} !important; }}
-    h1, h2, h3, p, span, label {{ color: {text_color} !important; font-weight: 600; }}
-    div[data-testid="stMarkdownContainer"] p {{ color: {text_color} !important; }}
-    div[data-testid="stVComponentBlock"] > div[style*="border"] {{
-        border: 1px solid {border_color} !important;
-        border-radius: 12px !important;
-        background: {card_bg} !important;
-        padding: 20px !important;
-        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
-    }}
-    .price-text {{ font-family: 'Courier New', Courier, monospace; font-size: 1.8rem !important; font-weight: bold; color: {price_color} !important; margin: 5px 0px; }}
-    .stock-title {{ font-size: 1.2rem; font-weight: 600; color: {title_color} !important; }}
+.stApp {{
+    background-color: {bg_color} !important;
+    color: {text_color} !important;
+}}
+h1, h2, h3, p, span, label {{
+    color: {text_color} !important;
+    font-weight: 600;
+}}
+div[data-testid="stMarkdownContainer"] p {{
+    color: {text_color} !important;
+}}
+div[data-testid="stVComponentBlock"] > div[style*="border"] {{
+    border: 1px solid {border_color} !important;
+    border-radius: 12px !important;
+    background: {card_bg} !important;
+    padding: 20px !important;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
+}}
+.price-text {{
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.8rem !important;
+    font-weight: bold;
+    color: {price_color} !important;
+    margin: 5px 0px;
+}}
+.stock-title {{
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: {title_color} !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -92,7 +145,7 @@ def fetch_trading_data(ticker_name):
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
             df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
-        return df
+            return df
     except:
         return None
 
@@ -102,13 +155,12 @@ def fetch_trading_data(ticker_name):
 if page == "🎯 Live Whistleblower":
     st.title("🚀 MarketMind AI Trading Terminal")
     st.subheader("Live Budget Scanner with Real-Time Data")
-    
+
     # 🚨 AUTO-SCANNER FRAGMENT
     @st.fragment(run_every=15)
     def live_alert_scanner():
         st.markdown("### 🚦 Immediate AI Whistleblower (Live Alerts)")
         buy_list, exit_list = [], []
-        
         for ticker in tickers:
             df = yf.download(ticker, period="1d", interval="1m", auto_adjust=True, progress=False)
             if not df.empty:
@@ -122,8 +174,8 @@ if page == "🎯 Live Whistleblower":
                 current_price = float(close_series.iloc[-1])
                 prev_price = float(close_series.iloc[-2]) if len(close_series) > 1 else current_price
                 price_change = ((current_price - prev_price) / prev_price) * 100
-                clean_name = ticker.replace(".NS", "")
                 
+                clean_name = ticker.replace(".NS", "")
                 st.session_state.live_prices[ticker] = {"price": current_price, "change": price_change, "status": "STABLE"}
                 
                 if time_diff_minutes < 15:
@@ -135,7 +187,7 @@ if page == "🎯 Live Whistleblower":
                         st.error(f"⚠️ **IMMEDIATE EXIT ALERT:** {clean_name} ({price_change:.2f}%)")
                         st.session_state.live_prices[ticker]["status"] = "EXIT"
                         exit_list.append(ticker)
-                    
+                        
         if not buy_list and not exit_list:
             st.info("🔄 Scanner running: Waiting for price spike or live market trend action.")
 
@@ -157,7 +209,7 @@ if page == "🎯 Live Whistleblower":
                     
                     if ticker not in st.session_state.live_prices:
                         st.session_state.live_prices[ticker] = {"price": latest_price, "change": 0.0, "status": "STABLE"}
-                    
+                        
                     with st.container(border=True):
                         st.markdown(f"<div class='stock-title'>{clean_name}</div>", unsafe_allow_html=True)
                         st.markdown(f"<div class='price-text'>{symbol}{latest_price:,.2f}</div>", unsafe_allow_html=True)
@@ -192,8 +244,12 @@ if page == "🎯 Live Whistleblower":
             if raw_df is not None and not raw_df.empty:
                 fig = go.Figure()
                 fig.add_trace(go.Candlestick(
-                    x=raw_df.index, open=raw_df['Open'].squeeze(), high=raw_df['High'].squeeze(),
-                    low=raw_df['Low'].squeeze(), close=raw_df['Close'].squeeze(), name='Price'
+                    x=raw_df.index,
+                    open=raw_df['Open'].squeeze(),
+                    high=raw_df['High'].squeeze(),
+                    low=raw_df['Low'].squeeze(),
+                    close=raw_df['Close'].squeeze(),
+                    name='Price'
                 ))
                 fig.update_layout(xaxis_rangeslider_visible=False, height=400, template="plotly_white", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig, use_container_width=True)
