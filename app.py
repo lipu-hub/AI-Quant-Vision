@@ -25,47 +25,39 @@ if "ai_analysis_result" not in st.session_state:
 if "live_prices" not in st.session_state:
     st.session_state.live_prices = {}
 
-# 📊 35 Penny & Budget Stocks List (Under ₹100 for Small Capital)
+# 📊 30 Best Indian Penny Stocks Under ₹20
 if "custom_tickers" not in st.session_state:
     st.session_state.custom_tickers = [
-        # --- ₹10 se ₹25 ke Penny Stocks ---
-        "IDEA.NS",       # Vodafone Idea
-        "YESBANK.NS",    # Yes Bank
-        "JPPOWER.NS",    # Jaiprakash Power
-        "SUZLON.NS",     # Suzlon Energy
-        "VIKASECO.NS",   # Vikas Ecotech
-        "URJA.NS",       # Urja Global
-        "GTLINFRA.NS",   # GTL Infrastructure
-        "ALOKINDS.NS",   # Alok Industries
-        "RCOM.NS",       # Reliance Communications
-        "INFIBEAM.NS",   # Infibeam Avenues
-
-        # --- ₹25 se ₹50 ke Stocks ---
-        "SOUTHBANK.NS",  # South Indian Bank
-        "IFCI.NS",       # IFCI Ltd.
-        "MOREPENLAB.NS", # Morepen Laboratories
-        "TV18BRDCST.NS", # TV18 Broadcast
-        "ZOMATO.NS",     # Zomato
-        "HFCL.NS",       # HFCL Ltd.
-        "PATELENG.NS",   # Patel Engineering
-        "GMRINFRA.NS",   # GMR Airports Infrastructure
-        "IRB.NS",        # IRB Infrastructure Developers
-
-        # --- ₹50 se ₹80 ke Budget Stocks ---
-        "SJVN.NS",       # SJVN Ltd.
-        "NHPC.NS",       # NHPC Ltd.
-        "PNB.NS",        # Punjab National Bank
-        "NBCC.NS",       # NBCC (India) Ltd.
-        "HUDCO.NS",      # Housing & Urban Development Corp
-        "RELIANCEPOWER.NS", # Reliance Power
-        "MMTC.NS",       # MMTC Ltd.
-        "HINDCOPPER.NS", # Hindustan Copper
-        "NATIONALUM.NS", # National Aluminium Company
-        "SAIL.NS",       # Steel Authority of India
-        "NTPC.NS",       # NTPC Limited
-        "BHEL.NS",       # Bharat Heavy Electricals
-        "GIPCL.NS",      # Gujarat Industries Power
-        "NLCINDIA.NS"    # NLC India Ltd.
+        "IDEA.NS",        # Vodafone Idea (₹14.29)
+        "JPPOWER.NS",     # Jaiprakash Power Ventures (₹18.95)
+        "GTLINFRA.NS",    # GTL Infrastructure
+        "VIKASECO.NS",    # Vikas Ecotech
+        "URJA.NS",        # Urja Global
+        "RCOM.NS",        # Reliance Communications
+        "SEPC.NS",        # SEPC Ltd
+        "INFIBEAM.NS",    # Infibeam Avenues (Under ₹20-25 range)
+        "ALOKINDS.NS",    # Alok Industries
+        "FCGL.NS",        # FCS Software Solutions
+        "SHREERAMA.NS",   # Shree Rama Multi-Tech
+        "SINTEX.NS",      # Sintex Plastics
+        "INTEGRA.NS",     # Integra Essentia
+        "WINSOME.NS",     # Winsome Yarns
+        "SALASTEEL.NS",   # Salaasteel
+        "RTNPOWER.NS",    # RattanIndia Power
+        "E2E.NS",         # E2E Networks (Penny Segment)
+        "JAIBALAJI.NS",   # Jai Balaji (Micro range)
+        "SYNCOM.NS",      # Syncom Formulations
+        "MOREPENLAB.NS",  # Morepen Lab (Sasta Momentum)
+        "RELIANCEPOWER.NS", # Reliance Power (Sasta Trade)
+        "VIVIDHA.NS",     # Visagar Polytex
+        "SMLT.NS",        # SML Isuzu (Penny Track)
+        "NCLIND.NS",      # NCL Industries
+        "BALAMINES.NS",   # Balaji Amines (Penny tracker)
+        "CREATIVE.NS",    # Creative Newtech
+        "SWELECTES.NS",   # Swelect Energy
+        "SREINFRA.NS",    # Srei Infrastructure
+        "DIGISPICE.NS",   # DiGiSPICE Technologies
+        "GIPCL.NS"        # Gujarat Industries (Sasta base)
     ]
 
 # 🎛️ NAVIGATION CONTROLLER WITH ADMIN MASTER PIN
