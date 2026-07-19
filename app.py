@@ -25,39 +25,39 @@ if "ai_analysis_result" not in st.session_state:
 if "live_prices" not in st.session_state:
     st.session_state.live_prices = {}
 
-# 📊 30 Best Indian Penny Stocks Under ₹20
+# 📊 Updated with Nifty 50 & Top Indian Blue-Chip Companies
 if "custom_tickers" not in st.session_state:
     st.session_state.custom_tickers = [
-        "IDEA.NS",        # Vodafone Idea (₹14.29)
-        "JPPOWER.NS",     # Jaiprakash Power Ventures (₹18.95)
-        "GTLINFRA.NS",    # GTL Infrastructure
-        "VIKASECO.NS",    # Vikas Ecotech
-        "URJA.NS",        # Urja Global
-        "RCOM.NS",        # Reliance Communications
-        "SEPC.NS",        # SEPC Ltd
-        "INFIBEAM.NS",    # Infibeam Avenues (Under ₹20-25 range)
-        "ALOKINDS.NS",    # Alok Industries
-        "FCGL.NS",        # FCS Software Solutions
-        "SHREERAMA.NS",   # Shree Rama Multi-Tech
-        "SINTEX.NS",      # Sintex Plastics
-        "INTEGRA.NS",     # Integra Essentia
-        "WINSOME.NS",     # Winsome Yarns
-        "SALASTEEL.NS",   # Salaasteel
-        "RTNPOWER.NS",    # RattanIndia Power
-        "E2E.NS",         # E2E Networks (Penny Segment)
-        "JAIBALAJI.NS",   # Jai Balaji (Micro range)
-        "SYNCOM.NS",      # Syncom Formulations
-        "MOREPENLAB.NS",  # Morepen Lab (Sasta Momentum)
-        "RELIANCEPOWER.NS", # Reliance Power (Sasta Trade)
-        "VIVIDHA.NS",     # Visagar Polytex
-        "SMLT.NS",        # SML Isuzu (Penny Track)
-        "NCLIND.NS",      # NCL Industries
-        "BALAMINES.NS",   # Balaji Amines (Penny tracker)
-        "CREATIVE.NS",    # Creative Newtech
-        "SWELECTES.NS",   # Swelect Energy
-        "SREINFRA.NS",    # Srei Infrastructure
-        "DIGISPICE.NS",   # DiGiSPICE Technologies
-        "GIPCL.NS"        # Gujarat Industries (Sasta base)
+        "RELIANCE.NS",   # Reliance Industries
+        "TCS.NS",        # Tata Consultancy Services
+        "HDFCBANK.NS",   # HDFC Bank
+        "INFY.NS",       # Infosys
+        "ICICIBANK.NS",  # ICICI Bank
+        "BHARTIARTL.NS", # Bharti Airtel
+        "SBI.NS",        # State Bank of India
+        "LICI.NS",       # Life Insurance Corporation of India
+        "ITC.NS",        # ITC Limited
+        "HINDUNILVR.NS", # Hindustan Unilever
+        "LT.NS",         # Larsen & Toubro
+        "BAJFINANCE.NS", # Bajaj Finance
+        "HCLTECH.NS",    # HCL Technologies
+        "M&M.NS",        # Mahindra & Mahindra
+        "SUNPHARMA.NS",  # Sun Pharmaceutical
+        "MARUTI.NS",     # Maruti Suzuki India
+        "NTPC.NS",       # NTPC Limited
+        "TITAN.NS",      # Titan Company
+        "TATASTEEL.NS",  # Tata Steel
+        "ADANIENT.NS",   # Adani Enterprises
+        "AXISBANK.NS",   # Axis Bank
+        "TATAMOTORS.NS", # Tata Motors
+        "ULTRACEMCO.NS", # UltraTech Cement
+        "POWERGRID.NS",  # Power Grid Corporation
+        "ONGC.NS",       # Oil & Natural Gas Corporation
+        "COALINDIA.NS",  # Coal India
+        "WIPRO.NS",      # Wipro
+        "JSWSTEEL.NS",   # JSW Steel
+        "ADANIPORTS.NS", # Adani Ports & SEZ
+        "ASIANPAINT.NS"  # Asian Paints
     ]
 
 # 🎛️ NAVIGATION CONTROLLER WITH ADMIN MASTER PIN
@@ -76,6 +76,7 @@ if page == "⚙️ Core Admin Console":
             if new_ticker and new_ticker not in st.session_state.custom_tickers:
                 st.session_state.custom_tickers.append(new_ticker)
                 st.rerun()
+        
         ticker_to_remove = st.selectbox("Select Asset to Remove:", ["None"] + st.session_state.custom_tickers)
         if ticker_to_remove != "None" and st.button("❌ Terminate Asset"):
             st.session_state.custom_tickers.remove(ticker_to_remove)
@@ -94,36 +95,12 @@ title_color = "#475569"
 
 st.markdown(f"""
 <style>
-.stApp {{
-    background-color: {bg_color} !important;
-    color: {text_color} !important;
-}}
-h1, h2, h3, p, span, label {{
-    color: {text_color} !important;
-    font-weight: 600;
-}}
-div[data-testid="stMarkdownContainer"] p {{
-    color: {text_color} !important;
-}}
-div[data-testid="stVComponentBlock"] > div[style*="border"] {{
-    border: 1px solid {border_color} !important;
-    border-radius: 12px !important;
-    background: {card_bg} !important;
-    padding: 20px !important;
-    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important;
-}}
-.price-text {{
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 1.8rem !important;
-    font-weight: bold;
-    color: {price_color} !important;
-    margin: 5px 0px;
-}}
-.stock-title {{
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: {title_color} !important;
-}}
+.stApp {{background-color: {bg_color} !important; color: {text_color} !important; }}
+h1, h2, h3, p, span, label {{color: {text_color} !important; font-weight: 600; }}
+div[data-testid="stMarkdownContainer"] p {{color: {text_color} !important; }}
+div[data-testid="stVComponentBlock"] > div[style*="border"] {{border: 1px solid {border_color} !important; border-radius: 12px !important; background: {card_bg} !important; padding: 20px !important; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.05) !important; }}
+.price-text {{font-family: 'Courier New', Courier, monospace; font-size: 1.8rem !important; font-weight: bold; color: {price_color} !important; margin: 5px 0px; }}
+.stock-title {{font-size: 1.2rem; font-weight: 600; color: {title_color} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -147,7 +124,7 @@ def fetch_trading_data(ticker_name):
 if page == "🎯 Live Whistleblower":
     st.title("🚀 MarketMind AI Trading Terminal")
     st.subheader("Live Budget Scanner with Real-Time Data")
-
+    
     # 🚨 AUTO-SCANNER FRAGMENT
     @st.fragment(run_every=15)
     def live_alert_scanner():
@@ -166,8 +143,8 @@ if page == "🎯 Live Whistleblower":
                 current_price = float(close_series.iloc[-1])
                 prev_price = float(close_series.iloc[-2]) if len(close_series) > 1 else current_price
                 price_change = ((current_price - prev_price) / prev_price) * 100
-                
                 clean_name = ticker.replace(".NS", "")
+                
                 st.session_state.live_prices[ticker] = {"price": current_price, "change": price_change, "status": "STABLE"}
                 
                 if time_diff_minutes < 15:
@@ -182,10 +159,10 @@ if page == "🎯 Live Whistleblower":
                         
         if not buy_list and not exit_list:
             st.info("🔄 Scanner running: Waiting for price spike or live market trend action.")
-
+            
     live_alert_scanner()
     st.markdown("---")
-
+    
     # GRID UI
     st.markdown("### 🔍 Intelligent Asset Grid")
     cols = st.columns(4)
@@ -224,7 +201,7 @@ if page == "🎯 Live Whistleblower":
                                 st.toast(f"Added 100 shares of {clean_name} to Practice Portfolio!", icon="💰")
                 except:
                     pass
-
+                    
     # Charts & Signals Execution Desk
     if st.session_state.selected_ticker and st.session_state.ai_analysis_result:
         st.markdown("---")
